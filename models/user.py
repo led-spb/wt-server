@@ -25,7 +25,7 @@ class UserStat(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    recorderd_at: Mapped[datetime.date] = mapped_column(Date(), default=datetime.date.today)
+    recorded_at: Mapped[datetime.date] = mapped_column(Date(), default=datetime.date.today)
 
     success: Mapped[List['int']] = mapped_column(JSON)
     failed: Mapped[List['int']] = mapped_column(JSON)

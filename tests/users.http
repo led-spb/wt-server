@@ -1,20 +1,18 @@
-POST http://localhost:5000/auth/login
-Content-Type: applicaion/json
+###
+POST http://localhost:5000/api/auth/token
+Content-Type: application/json
 
-{"login":"heres", "password": "heres"}
+{"login":"default", "password": ""}
 
-POST http://localhost:5000/auth/logout
-
-
-GET http://localhost:5000/user
+GET http://localhost:5000/api/user
 
 ###
-GET http://localhost:5000/user/stat
+GET http://localhost:5000/api/user/stat
 
-PUT http://localhost:5000/user/stat
+PUT http://localhost:5000/api/user/stat
 Content-Type: application/json
 
 {
-    "success": [12],
-    "failed": [3453]
+    "success": [],
+    "failed": []
 }

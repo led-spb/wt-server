@@ -19,7 +19,7 @@ def get_user_info():
 
 class UserStatSchema(Schema):
     id = fields.Int(required=True, dump_only=True)
-    recorderd_at = fields.Date(required=True, dump_only=True)
+    recorded_at = fields.Date(required=True, dump_only=True)
     success = fields.List(fields.Int(), required=True)
     failed = fields.List(fields.Int(), required=True)
 
@@ -37,7 +37,7 @@ def update_user_stat():
     data = UserStatSchema().load(request.get_json())
 
     stat = db.session.execute(
-        db.select(UserStat).filter_by(user_id=current_user.id).filter_by(recorderd_at=date.today())
+        db.select(UserStat).filter_by(user_id=current_user.id).filter_by(recorded_at=date.today())
     ).scalar_one_or_none()
 
     if stat is None:

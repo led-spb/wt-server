@@ -1,2 +1,2 @@
 ###
-GET http://localhost:5000/spellings/task/1?page=1
+GET http://localhost:5000/api/spellings/task/1?page=1

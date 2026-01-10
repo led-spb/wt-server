@@ -1,6 +1,0 @@
-###
-GET http://localhost:5000/words
-
-###
-@id = 1
-GET http://localhost:5000/spellings/{{ id }}/parts
