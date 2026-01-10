@@ -1,7 +1,7 @@
 from . import db
 from typing import List
 from sqlalchemy import Integer, String, ForeignKey, JSON
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, query_expression
 
 
 class Word(db.Model):
