@@ -1,0 +1,9 @@
+###
+# @name auth
+# @no-log
+POST http://localhost:5000/api/auth/token
+Content-Type: application/json
+
+{"login": "{{ user_name }}", "password": "{{ user_password }}"}
+
+?? status == 200

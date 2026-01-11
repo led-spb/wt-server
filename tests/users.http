@@ -1,17 +1,19 @@
+# @import ./auth.http
+
 ###
-POST http://localhost:5000/api/auth/token
-Content-Type: application/json
-
-{"login":"default", "password": ""}
-
+# @ref auth
 GET http://localhost:5000/api/user
+Authorization: Bearer {{ auth.access_token }}
 
 ###
+# @ref auth
 GET http://localhost:5000/api/user/stat
+Authorization: Bearer {{ auth.access_token }}
 
+###
+# @ref auth
 PUT http://localhost:5000/api/user/stat
-Content-Type: application/json
-
+Authorization: Bearer {{ auth.access_token }}
 {
     "success": [],
     "failed": []

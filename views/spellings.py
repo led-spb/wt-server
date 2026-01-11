@@ -1,5 +1,6 @@
 from flask import Blueprint, request
-from models.words import db, Word, Spelling
+from models.word import db, Word, Spelling
+from services.tasks import TaskService
 from sqlalchemy import func
 from marshmallow import Schema, fields
 from flask_jwt_extended import jwt_required, current_user
@@ -24,13 +25,11 @@ class WordSpellingSchema(Schema):
     spellings = fields.Nested(SpellingSchema, many=True, dump_only=True)
 
 
-@spellings.route('<int:word_id>', methods=['GET'])
 def get_word_spellings(word_id):
      items = Spelling.query.filter(Spelling.word_id == word_id)
      return SpellingSchema().dump(items, many=True)
 
 
-@spellings.route('<int:word_id>', methods=['POST'])
 def create_word_spelling(word_id):
      word = Word.query.get_or_404(word_id)
 
@@ -43,7 +42,6 @@ def create_word_spelling(word_id):
      return get_word_spellings(word_id)
 
 
-@spellings.route('part/<int:id>', methods=['DELETE'])
 def delete_word_spelling(id):
     part = Spelling.query.get_or_404(id)
     db.session.delete(part)
@@ -51,21 +49,13 @@ def delete_word_spelling(id):
     return '', 204
 
 
-@spellings.route('task/<int:task_id>')
+@spellings.route('task')
 @jwt_required()
-def get_task(task_id):
-    page = request.args.get('page', 1, type=int)
+def prepare_task():
+    min_level = request.args.get('min', 1, type=int)
+    max_level = request.args.get('max', 10, type=int)
+    count = min(request.args.get('count', 20, type=int), 50)
 
-    seed_value = 2/task_id - 1
+    task = TaskService.get_user_spelling_task(current_user, count=count, min_level=min_level, max_level=max_level)
 
-    db.session.execute(
-         func.setseed(seed_value)
-    )
-    items = db.paginate(
-        Word.query.
-            filter(Word.spellings.any()).
-            order_by(func.random()),
-
-        page=page, per_page=20
-    )
-    return WordSpellingSchema().dump(items, many=True)
+    return WordSpellingSchema().dump(task, many=True)

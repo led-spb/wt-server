@@ -1,5 +1,5 @@
 from flask import Blueprint, request
-from models.words import db, Word
+from models.word import db, Word
 from marshmallow import Schema, fields
 
 
@@ -18,7 +18,6 @@ class SearchWordSchema(Schema):
     ids = fields.List['int']
 
 
-@words.route('', methods=['GET'])
 def get_words():
     items = db.paginate(
         Word.query.order_by(Word.id), page=1, per_page=20
@@ -26,13 +25,11 @@ def get_words():
     return WordSchema().dump(items, many=True)
 
 
-@words.route('<int:id>', methods=['GET'])
 def get_word(id):
     word = Word.query.get_or_404(id)
     return WordSchema().dump(word)
 
 
-@words.route('', methods=['POST'])
 def create_word():
     data = WordSchema().load(request.get_json())
     item = Word(**data)
@@ -43,7 +40,6 @@ def create_word():
     return WordSchema().dump(item)
 
 
-@words.route('<int:id>', methods=['DELETE'])
 def delete_words(id):
     word = Word.query.get_or_404(id)
     db.session.delete(word)

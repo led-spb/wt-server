@@ -1,28 +1,28 @@
-from models.user import User
-from flask import Blueprint, request, jsonify, Response
+from services.users import UserService
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, create_refresh_token, set_access_cookies, unset_access_cookies
 from marshmallow import Schema, fields
 
 
 auth = Blueprint('auth', __name__)
 
+def user_identity_lookup(user):
+    return str(user.id)
+
+def user_lookup(identity):
+    return UserService.get_user_by_id(identity)
 
 class UserLoginSchema(Schema):
     login = fields.String(required=True)
     password = fields.String(required=True)
 
-
-def user_identity_lookup(user):
-    return str(user.id)
-
-def user_lookup(identity):
-    return User.query.filter_by(id=identity).one_or_none()
-
 @auth.route('/token', methods=['POST'])
 def token():
-    data = UserLoginSchema().load(request.get_json())
+    data = UserLoginSchema().load(
+        request.get_json()
+    )
 
-    auth_user = User.query.filter(User.name == data.get('login')).one_or_none()
+    auth_user = UserService.get_user_by_login(data.get('login'))
     if auth_user is not None and auth_user.check_password(data.get('password')):
         access_token = create_access_token(identity=auth_user)
         #refresh_token = create_refresh_token(identity='default')

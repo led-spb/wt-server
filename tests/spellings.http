@@ -1,2 +1,12 @@
+# @import ./auth.http
+
 ###
+# @ref auth
 GET http://localhost:5000/api/spellings/task/1?page=1
+Authorization: Bearer {{ auth.access_token }}
+
+
+###
+# @ref auth
+GET http://localhost:5000/api/spellings/task?min=6&max=10
+Authorization: Bearer {{ auth.access_token }}
