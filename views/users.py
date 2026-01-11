@@ -57,5 +57,9 @@ def update_user_stat():
     data = UpdateUserStateSchema().load(
         request.get_json()
     )
-    UserStatService.update_user_stat(current_user, success=data['success'], failed=data['failed'])
+    UserStatService.update_user_stat(
+        current_user, 
+        success=data.get('success', []), 
+        failed=data.get('failed', [])
+    )
     return '', 204

@@ -81,9 +81,13 @@ class UserStatService:
     @classmethod
     def update_user_stat(cls, user: User, success: List[int], failed: List[int]) -> None:
         stat = db.session.execute(
-            db.select(UserStat)
-            .filter_by(user_id=User.id)
-            .filter_by(recorded_at=date.today())
+            db.select(
+                UserStat
+            ).filter(
+                UserStat.user_id == user.id
+            ).filter(
+                UserStat.recorded_at == date.today()
+            )
         ).scalar_one_or_none()
 
         if stat is None:
