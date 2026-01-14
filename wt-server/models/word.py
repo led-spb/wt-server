@@ -33,7 +33,6 @@ class Accent(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     word_id: Mapped[int] = mapped_column(ForeignKey("words.id"))
     position: Mapped[int] = mapped_column(nullable=False)
-    variants: Mapped[List['int']] = mapped_column(JSON)
 
 
 class WordStatistics(db.Model):
