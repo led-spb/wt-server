@@ -1,7 +1,7 @@
 from flask import Blueprint, request
-from ..models.word import db, Word, Spelling
-from ..services.tasks import TaskService
-from sqlalchemy import func
+from ..models import db, nulls_first, order_random
+from ..models.word import db, Word, Spelling, WordStatistics
+from ..services.spellings import SpellingService
 from marshmallow import Schema, fields
 from flask_jwt_extended import jwt_required, current_user
 
@@ -25,30 +25,6 @@ class WordSpellingSchema(Schema):
     spellings = fields.Nested(SpellingSchema, many=True, dump_only=True)
 
 
-def get_word_spellings(word_id):
-     items = Spelling.query.filter(Spelling.word_id == word_id)
-     return SpellingSchema().dump(items, many=True)
-
-
-def create_word_spelling(word_id):
-     word = Word.query.get_or_404(word_id)
-
-     data = SpellingSchema().load(request.get_json())
-     spelling = Spelling(**data)
-     spelling.word_id = word.id
-     db.session.add(spelling)
-     db.session.commit()
-
-     return get_word_spellings(word_id)
-
-
-def delete_word_spelling(id):
-    part = Spelling.query.get_or_404(id)
-    db.session.delete(part)
-    db.session.commit()
-    return '', 204
-
-
 @spellings.route('task')
 @jwt_required()
 def prepare_task():
@@ -56,6 +32,29 @@ def prepare_task():
     max_level = request.args.get('max', 10, type=int)
     count = min(request.args.get('count', 20, type=int), 50)
 
-    task = TaskService.get_user_spelling_task(current_user, count=count, min_level=min_level, max_level=max_level)
+    failed = SpellingService.get_with_user_stats(
+        user=current_user, 
+        filters=[
+            WordStatistics.failed >0, 
+            Word.level >= min_level,
+            Word.level <= max_level
+        ],
+        order_by=[order_random],
+        count=count//5
+    )
 
-    return WordSpellingSchema().dump(task, many=True)
+    new = SpellingService.get_with_user_stats(
+        user=current_user,
+        filters=[
+            Word.level >= min_level,
+            Word.level <= max_level,
+            Word.id.notin_([failed.id for failed in failed])
+        ],
+        order_by=[
+            nulls_first(WordStatistics.success + WordStatistics.failed), 
+            order_random
+        ],
+        count=count - len(failed)
+    )
+
+    return WordSpellingSchema().dump(failed+new, many=True)

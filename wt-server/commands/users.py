@@ -1,5 +1,4 @@
 import click
-from flask import current_app
 from flask.cli import AppGroup
 from ..models import db
 from ..models.user import User

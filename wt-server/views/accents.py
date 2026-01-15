@@ -1,9 +1,9 @@
 from flask import Blueprint, request, current_app as app
 from marshmallow import Schema, fields
-from ..models import db
-from ..models.word import Word, Accent
+from ..models import db, order_random, nulls_first
+from ..models.word import Word, Accent, WordStatistics
 from ..services.words import WordService
-from ..services.tasks import TaskService
+from ..services.accents import AccentService
 from .words import WordSchema
 from flask_jwt_extended import jwt_required, current_user
 
@@ -61,5 +61,29 @@ def prepare_task():
     max_level = request.args.get('max', 10, type=int)
     count = min(request.args.get('count', 20, type=int), 50)
 
-    task = TaskService.get_user_accent_task(current_user, count=count, min_level=min_level, max_level=max_level)
-    return AccentSchema().dump(task, many=True)
+    failed = AccentService.get_with_user_stats(
+        user=current_user, 
+        filters=[
+            WordStatistics.failed >0, 
+            Word.level >= min_level,
+            Word.level <= max_level
+        ],
+        order_by=[order_random],
+        count=count//5
+    )
+
+    new = AccentService.get_with_user_stats(
+        user=current_user,
+        filters=[
+            Word.level >= min_level,
+            Word.level <= max_level,
+            Word.id.notin_([failed.id for failed in failed])
+        ],
+        order_by=[
+            nulls_first(WordStatistics.success + WordStatistics.failed), 
+            order_random
+        ],
+        count=count - len(failed)
+    )
+
+    return AccentSchema().dump(failed+new, many=True)
