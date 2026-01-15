@@ -9,7 +9,7 @@ from ..services.users import UserService
 user_commands = AppGroup('user', help='Manage application users.')
 
 
-@user_commands.command('create', 'Register new user')
+@user_commands.command('create', help='Register new user')
 @click.argument('name', default=None)
 def create_user(name=None):
     if name is None:
@@ -24,7 +24,7 @@ def create_user(name=None):
     db.session.add(user)
     db.session.commit()
 
-@user_commands.command('password', 'Change user password')
+@user_commands.command('password', help='Change user password')
 @click.argument('name', default=None)
 def reset_password(name=None):
     if name is None:
