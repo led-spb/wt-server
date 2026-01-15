@@ -24,7 +24,7 @@ class SpellingService:
     def get_with_user_stats(cls, user: User, filters: List, order_by: List, count: int) -> List[Word]:
         query = db.select(Word).options(
             joinedload(Word.spellings)
-        ).join(
+        ).outerjoin(
             WordStatistics
         ).filter(
             WordStatistics.user_id == user.id
