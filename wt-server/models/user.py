@@ -13,6 +13,7 @@ class User(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(String(512), nullable=False)
+    daily_goal: Mapped[int] = mapped_column(Integer, nullable=False, default=50)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

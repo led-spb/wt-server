@@ -78,7 +78,7 @@ def get_user_progress():
     series = 0
     today_progress = 0
 
-    user_daily_goal = 50
+    user_daily_goal = current_user.daily_goal
 
     now = date.today() - timedelta(days=1)
     for item in stats:
