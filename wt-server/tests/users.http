@@ -7,7 +7,16 @@ Authorization: Bearer {{ auth.access_token }}
 
 ###
 # @ref auth
+GET http://localhost:5000/api/user/progress
+Authorization: Bearer {{ auth.access_token }}
+
+###
+# @ref auth
 GET http://localhost:5000/api/user/stat
+Authorization: Bearer {{ auth.access_token }}
+###
+# @ref auth
+GET http://localhost:5000/api/user/troubles
 Authorization: Bearer {{ auth.access_token }}
 
 

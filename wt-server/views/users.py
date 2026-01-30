@@ -3,6 +3,7 @@ from ..models import db
 from ..models.user import UserReport
 from ..services.users import UserStatService
 from ..services.words import WordService
+from datetime import date, timedelta
 from marshmallow import Schema, fields
 from flask_jwt_extended import jwt_required, current_user
 
@@ -14,7 +15,7 @@ class UserSchema(Schema):
     name = fields.Str(required=True)
 
 
-@users.route('', methods=['GET'])
+@users.get('')
 @jwt_required()
 def get_user_info():
     return UserSchema().dump(current_user)
@@ -54,33 +55,70 @@ class WordStatSchema(StatisticSchema):
 class DayStatSchema(StatisticSchema):
     recorded_at = fields.Date()
 
-class ProgressSchema(Schema):
+
+class GoalSchema(Schema):
     total = fields.Integer()
     learned = fields.Integer()
-class UserStatSchema(Schema):
-    failed = fields.Nested(WordStatSchema, many=True)
-    days = fields.Nested(DayStatSchema, many=True)
-    progress = fields.Nested(ProgressSchema)
+
+class UserProgressSchema(Schema):
+    series = fields.Integer()
+    overall = fields.Nested(GoalSchema)
+    today = fields.Nested(GoalSchema)
 
 class UpdateUserStateSchema(Schema):
     failed = fields.List(fields.Int)
     success = fields.List(fields.Int)
 
 
-@users.route('/stat', methods=['GET'])
+@users.get('/progress')
+@jwt_required()
+def get_user_progress():
+    stats = UserStatService.get_user_stats(current_user)
+
+    series = 0
+    today_progress = 0
+
+    user_daily_goal = 50
+
+    now = date.today() - timedelta(days=1)
+    for item in stats:
+        if item.recorded_at == date.today():
+            today_progress = item.success + item.failed
+            continue
+        if item.success + item.failed < user_daily_goal or item.recorded_at != now:
+            break
+        series += 1
+        now -= timedelta(days=1)
+    series += 1 if today_progress >= user_daily_goal else 0
+        # 'progress': {
+        #     'learned': UserStatService.get_user_progress(current_user),
+        #     'total': WordService.get_total_words_count(),
+        # }
+    result = {
+        'series': series,
+        'overall': {
+            'learned': UserStatService.get_user_progress(current_user),
+            'total': WordService.get_total_words_count()
+        },
+        'today': {
+            'learned': today_progress,
+            'total': user_daily_goal,
+        }
+    }
+    return UserProgressSchema().dump(result)
+
+
+@users.get('/troubles')
+@jwt_required()
+def get_user_troubles():
+    failed_words = UserStatService.get_user_word_failed(current_user, count=10)
+    return WordStatSchema().dump(failed_words, many=True)
+
+@users.get('/stat')
 @jwt_required()
 def get_user_stat():
-    failed_words = UserStatService.get_user_word_failed(current_user, count=10)
     stats = UserStatService.get_user_stats(current_user, days=14)
-
-    return UserStatSchema().dump({
-        'failed': failed_words,
-        'days': stats,
-        'progress': {
-            'learned': UserStatService.get_user_progress(current_user),
-            'total': WordService.get_total_words_count(),
-        }
-    })
+    return DayStatSchema().dump(stats, many=True)
 
 
 class UserRatingSchema(Schema):
@@ -91,8 +129,7 @@ class UserRatingSchema(Schema):
     progress = fields.Integer()
     progress_pct = fields.Float()
 
-
-@users.route('/rating', methods=['GET'])
+@users.get('/rating')
 @jwt_required()
 def get_rating():
     days = min(request.args.get('days', 7, type=int), 90)
@@ -116,7 +153,7 @@ def get_rating():
         many=True
     )
 
-@users.route('/stat', methods=['PUT'])
+@users.put('/stat')
 @jwt_required()
 def update_user_stat():
     data = UpdateUserStateSchema().load(
@@ -132,7 +169,7 @@ def update_user_stat():
 class UserReportSchema(Schema):
     word = fields.Int(required=True)
 
-@users.route('/report', methods=['PUT'])
+@users.put('/report')
 @jwt_required()
 def put_user_report():
     data = UserReportSchema().load(

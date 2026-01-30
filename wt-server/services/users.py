@@ -43,12 +43,14 @@ class UserStatService:
         return db.session.execute(query).scalars()
 
     @classmethod
-    def get_user_stats(cls, user: User, days :int) -> List[UserStat]:
+    def get_user_stats(cls, user: User, days :int|None = None) -> List[UserStat]:
         query = db.select(UserStat
         ).filter(
             UserStat.user_id == user.id
         ).filter(
-            UserStat.recorded_at >= date.today() - timedelta(days=days)
+            days is None or (UserStat.recorded_at >= date.today() - timedelta(days=days))
+        ).order_by(
+            UserStat.recorded_at.desc()
         )
         return db.session.execute(query).scalars()
 
