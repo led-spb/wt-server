@@ -1,9 +1,11 @@
 import click
 from flask.cli import AppGroup
 from ..models import db
-from ..models.user import User
+from ..models.user import User, Invite
 from ..services.users import UserService
-
+import secrets
+import hashlib
+from datetime import datetime, timedelta
 
 user_commands = AppGroup('user', help='Manage application users.')
 
@@ -38,3 +40,15 @@ def reset_password(name=None):
 
     db.session.add(user)
     db.session.commit()
+
+@user_commands.command('invite', help='Create new invite')
+@click.option('--lifetime', type=click.INT, default=14)
+def create_invite(lifetime: int):
+    hash = hashlib.sha256(secrets.token_bytes(16))
+    invite = Invite(
+        hash=hash.hexdigest(),
+        lifetime=datetime.now() + timedelta(days=lifetime)
+    )
+    db.session.add(invite)
+    db.session.commit()
+    pass

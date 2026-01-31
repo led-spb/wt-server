@@ -21,7 +21,7 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
     reports: Mapped['UserReport'] = relationship()
-    
+
 
 class UserStat(db.Model):
     __tablename__ = 'users_stat'

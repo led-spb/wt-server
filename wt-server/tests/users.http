@@ -43,3 +43,10 @@ Authorization: Bearer {{ auth.access_token }}
 Content-Type: application/json
 
 { "word": 1}
+
+
+###
+POST http://localhost:5000/api/user/register
+Content-Type: application/json
+
+{"login": "megatron_1981", "password": "12", "invite": "rrrrr"}

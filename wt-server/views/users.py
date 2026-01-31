@@ -1,10 +1,11 @@
 from flask import Blueprint, jsonify, request, current_app as app
 from ..models import db
-from ..models.user import UserReport
-from ..services.users import UserStatService
+from ..models.user import User, UserReport
+from ..services.users import UserService, UserStatService
+from ..services.invites import InvitesService
 from ..services.words import WordService
 from datetime import date, timedelta
-from marshmallow import Schema, fields
+from marshmallow import Schema, fields, ValidationError, validate
 from flask_jwt_extended import jwt_required, current_user
 
 
@@ -90,10 +91,7 @@ def get_user_progress():
         series += 1
         now -= timedelta(days=1)
     series += 1 if today_progress >= user_daily_goal else 0
-        # 'progress': {
-        #     'learned': UserStatService.get_user_progress(current_user),
-        #     'total': WordService.get_total_words_count(),
-        # }
+
     result = {
         'series': series,
         'overall': {
@@ -184,5 +182,30 @@ def put_user_report():
 
     db.session.add(current_user)
     db.session.commit()
+
+    return '', 204
+
+
+
+class RegisterUserSchema(Schema):
+    invite = fields.String(required=True)
+    login = fields.String(required=True, validate=validate.Regexp(r'^[a-zA-Z][a-zA-Z0-9_]{3,}$'))
+    password = fields.String(required=True)
+
+@users.post('/register')
+def register_user():
+    data = RegisterUserSchema().load(request.get_json())
+
+    if not InvitesService.invite_is_valid(data.get('invite')):
+        raise ValidationError('Invite is invalid', field_name='invite')
+
+    if UserService.get_user_by_login(data.get('login')) is not None:
+        raise ValidationError('User is already exists', field_name='login')
+    
+    UserService.register_user(
+        login=data.get('login'),
+        password=data.get('password'),
+        invite=data.get('invite')
+    )
 
     return '', 204

@@ -2,6 +2,7 @@ from typing import Union, List
 from ..models import db
 from ..models.user import User, UserStat
 from ..models.word import WordStatistics, Word
+from .invites import InvitesService
 from datetime import date, timedelta
 from sqlalchemy import func, case, cast, Numeric, desc, and_, nulls_last
 from sqlalchemy.orm import joinedload
@@ -20,6 +21,16 @@ class UserService:
         return db.session.execute(
             db.select(User).filter(User.name == login)
         ).scalar_one_or_none()
+    
+    @classmethod
+    def register_user(cls, login :str, password :str, invite :str) -> User:
+        new_user = User(name=login)
+        new_user.set_password(password)
+        db.session.add(new_user)
+
+        InvitesService.redeem_invite(invite, new_user)
+        db.session.commit()
+        return new_user
 
 
 class UserStatService:
