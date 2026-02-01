@@ -1,7 +1,7 @@
 import click
 from flask.cli import AppGroup
 from ..models import db
-from ..models.user import User, Invite
+from ..models.user import Invite
 from ..services.users import UserService
 import secrets
 import hashlib
@@ -19,11 +19,7 @@ def create_user(name=None):
 
     if UserService.get_user_by_login(name):
         raise RuntimeError('User is already exists')
-
-    user = User(name=name)
-    user.set_password(password)
-    db.session.add(user)
-    db.session.commit()
+    UserService.register_user(name, password, None)
 
 
 @user_commands.command('password', help='Change user password')

@@ -13,7 +13,9 @@ users = Blueprint('users', __name__)
 
 class UserSchema(Schema):
     id = fields.Int(required=True, dump_only=True)
+    login = fields.Str(required=True)
     name = fields.Str(required=True)
+    daily_goal = fields.Integer()
 
 
 @users.get('')
