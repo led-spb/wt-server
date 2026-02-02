@@ -3,3 +3,4 @@ flask-jwt-extended
 flask-sqlalchemy
 flask-marshmallow
 psycopg2-binary
+pywebpush

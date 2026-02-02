@@ -5,7 +5,7 @@ from ..services.users import UserService, UserStatService
 from ..services.invites import InvitesService
 from ..services.words import WordService
 from datetime import date, timedelta
-from marshmallow import Schema, fields, ValidationError, validate
+from marshmallow import Schema, fields, ValidationError, validate, missing
 from flask_jwt_extended import jwt_required, current_user
 
 
@@ -15,12 +15,32 @@ class UserSchema(Schema):
     id = fields.Int(required=True, dump_only=True)
     login = fields.Str(required=True)
     name = fields.Str(required=True)
-    daily_goal = fields.Integer()
+    daily_goal = fields.Integer(data_key='dailyGoal')
+
+
+class UpdateUserSchema(Schema):
+    name = fields.Str()
+    daily_goal = fields.Integer(data_key='dailyGoal')
+    notify_info = fields.String(data_key='notifyInfo', allow_none=True, load_default='')
 
 
 @users.get('')
 @jwt_required()
 def get_user_info():
+    return UserSchema().dump(current_user)
+
+@users.put('')
+@jwt_required()
+def update_user_info():
+    data = UpdateUserSchema().load(request.get_json())
+    if( data.get('name') is not None ):
+        current_user.name = data.get('name')
+    if( data.get('daily_goal') is not None):
+        current_user.daily_goal = data.get('daily_goal')
+    if( data.get('notify_info') != ''):
+        current_user.notify_info = data.get('notify_info')
+    
+    db.session.commit()
     return UserSchema().dump(current_user)
 
 class AccentSchema(Schema):

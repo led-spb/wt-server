@@ -1,4 +1,3 @@
-from typing import Union, List
 from ..models import db
 from ..models.user import User, UserStat
 from ..models.word import WordStatistics, Word
@@ -11,13 +10,13 @@ from sqlalchemy.orm import joinedload
 class UserService:
 
     @classmethod
-    def get_user_by_id(cls, id :int) -> Union[User, None]:
+    def get_user_by_id(cls, id :int) -> User|None:
         return db.session.execute(
             db.select(User).filter(User.id == id)
         ).scalar_one_or_none()
 
     @classmethod
-    def get_user_by_login(cls, login :str) -> Union[User, None]:
+    def get_user_by_login(cls, login :str) -> User|None:
         return db.session.execute(
             db.select(User).filter(User.login == login)
         ).scalar_one_or_none()
@@ -37,7 +36,7 @@ class UserService:
 class UserStatService:
 
     @classmethod
-    def get_user_word_failed(cls, user: User, count :int) -> List[WordStatistics]:
+    def get_user_word_failed(cls, user: User, count :int) -> list[WordStatistics]:
         query = db.select(
             WordStatistics
         ).options(
@@ -55,7 +54,7 @@ class UserStatService:
         return db.session.execute(query).scalars()
 
     @classmethod
-    def get_user_stats(cls, user: User, days :int|None = None) -> List[UserStat]:
+    def get_user_stats(cls, user: User, days :int|None = None) -> list[UserStat]:
         query = db.select(UserStat
         ).filter(
             UserStat.user_id == user.id
@@ -68,7 +67,7 @@ class UserStatService:
 
 
     @classmethod
-    def update_user_stat(cls, user: User, success: List[int], failed: List[int]) -> None:
+    def update_user_stat(cls, user: User, success: list[int], failed: list[int]) -> None:
         word_stats = db.session.execute(
             db.select(
                 Word, WordStatistics
@@ -117,7 +116,7 @@ class UserStatService:
         return None
 
     @classmethod
-    def get_users_with_aggregate_stat(cls, days :int, count :int = 5) -> List[tuple[User, int, int, int, int]]:
+    def get_users_with_aggregate_stat(cls, days :int, count :int = 5) -> list[tuple[User, int, int, int, int]]:
         agg_stat = db.select(
             UserStat.user_id,
             func.sum(UserStat.success).label('success'),

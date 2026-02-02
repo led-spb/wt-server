@@ -5,6 +5,14 @@
 GET http://localhost:5000/api/user
 Authorization: Bearer {{ auth.access_token }}
 
+
+PUT http://localhost:5000/api/user
+Authorization: Bearer {{ auth.access_token }}
+Content-Type: application/json
+
+{"dailyGoal": 100}
+
+
 ###
 # @ref auth
 GET http://localhost:5000/api/user/progress

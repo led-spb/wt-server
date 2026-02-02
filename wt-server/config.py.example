@@ -4,3 +4,8 @@ SQLALCHEMY_DATABASE_URI = 'postgresql://user:password@127.0.0.1/db'
 JWT_SECRET_KEY = '<generate>'
 JWT_TOKEN_LOCATION = ['headers']
 JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(days=7)
+
+VAPID_PUBLIC_KEY = '...'
+VAPID_PRIVATE_KEY = '...'
+
+ADMIN_EMAIL="admin@email"

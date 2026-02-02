@@ -1,3 +1,4 @@
+import json
 import click
 from typing import List
 from flask import current_app
@@ -6,6 +7,8 @@ from sqlalchemy import func, distinct
 from sqlalchemy.orm import join, joinedload
 from ..models import db
 from ..models.word import Word, Spelling, Accent, WordStatistics
+from ..services.users import UserService
+import pywebpush
 import itertools
 
 tools_commands = AppGroup('tools', help='Custom tools')
@@ -51,7 +54,7 @@ def exec_merge_words(count :int):
 def merge_words(words :List[Word]) -> Word:
     if len(words) == 0:
         return None
-    
+
     new_word = Word(
         fullword=words[0].fullword,
         context=words[0].context,
@@ -107,7 +110,7 @@ def update_words_stats(words :List[Word], new_word: Word):
             WordStatistics.user_id
         )
     ).all()
-    
+
     for user_id, success, failed in stats:
         user_stat = db.session.execute(
             db.select(
@@ -141,3 +144,20 @@ def cascade_delete_words(words :List[Word]):
 
         db.session.delete(word)
         db.session.commit()
+
+@tools_commands.command('notify')
+@click.argument('login', type=str)
+@click.argument('message', type=str)
+def notify(login: str, message: str):
+    user = UserService.get_user_by_login(login)
+    if user is None or user.notify_info is None:
+        return
+
+    pywebpush.webpush(
+        subscription_info=json.loads(user.notify_info),
+        data=json.dumps(dict(title='Тренажер слов', body=message)),
+        vapid_private_key=current_app.config.get('VAPID_PRIVATE_KEY'),
+        vapid_claims={
+            "sub": "mailto:%s".format(current_app.config.get('ADMIN_EMAIL'))
+        }
+    )

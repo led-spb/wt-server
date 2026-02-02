@@ -20,7 +20,7 @@ class InvitesService:
             and invite.lifetime > datetime.now()
 
     @classmethod
-    def redeem_invite(cls, invite_hash: str, user :User):
+    def redeem_invite(cls, invite_hash: str, user :User) -> None:
         invite = db.session.execute(
             db.select(
                 Invite
