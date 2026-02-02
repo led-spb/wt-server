@@ -5,6 +5,10 @@
 GET http://localhost:5000/api/user
 Authorization: Bearer {{ auth.access_token }}
 
+###
+# @ref auth
+GET http://localhost:5000/api/user/subscription/key
+Authorization: Bearer {{ auth.access_token }}
 
 PUT http://localhost:5000/api/user
 Authorization: Bearer {{ auth.access_token }}
