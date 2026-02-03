@@ -16,6 +16,7 @@ class User(db.Model):
     password_hash: Mapped[str] = mapped_column(String(512), nullable=False)
     daily_goal: Mapped[int] = mapped_column(Integer, nullable=False, default=50)
     notify_info: Mapped[str] = mapped_column(String, nullable=True)
+    updated_at: Mapped[datetime.datetime] = mapped_column(DateTime(), nullable=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -40,7 +41,7 @@ class Invite(db.Model):
     __tablename__ = 'invites'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    hash: Mapped[str] = mapped_column(String(64), nullable=True, unique=True)
+    hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     lifetime: Mapped[datetime.datetime] = mapped_column(DateTime(), nullable=False)
     registered_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
 

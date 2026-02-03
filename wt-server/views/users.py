@@ -1,10 +1,10 @@
 from flask import Blueprint, jsonify, request, current_app as app
 from ..models import db
-from ..models.user import User, UserReport
+from ..models.user import UserReport
 from ..services.users import UserService, UserStatService
 from ..services.invites import InvitesService
 from ..services.words import WordService
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from marshmallow import Schema, fields, ValidationError, validate, missing
 from flask_jwt_extended import jwt_required, current_user
 
@@ -33,11 +33,15 @@ def get_user_info():
 @jwt_required()
 def update_user_info():
     data = UpdateUserSchema().load(request.get_json())
-    if( data.get('name') is not None ):
+    if data.get('name') is not None and data.get('name') != current_user:
+        if current_user.updated_at is not None \
+            and datetime.now() - current_user.updated_at < timedelta(days=7):
+            raise ValidationError("Forbbiden to change name", field_name='name')
         current_user.name = data.get('name')
-    if( data.get('daily_goal') is not None):
+        current_user.updated_at = datetime.now()
+    if data.get('daily_goal') is not None:
         current_user.daily_goal = data.get('daily_goal')
-    if( data.get('notify_info') != ''):
+    if data.get('notify_info') != '':
         current_user.notify_info = data.get('notify_info')
     
     db.session.commit()

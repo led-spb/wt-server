@@ -28,7 +28,7 @@ def token():
         #refresh_token = create_refresh_token(identity='default')
 
         response = jsonify({
-            'access_token': access_token,
+            'accessToken': access_token,
             #'refresh_token': refresh_token,
         })
         #set_access_cookies(response, access_token)

@@ -158,6 +158,6 @@ def notify(login: str, message: str):
         data=json.dumps(dict(title='Тренажер слов', body=message)),
         vapid_private_key=current_app.config.get('VAPID_PRIVATE_KEY'),
         vapid_claims={
-            "sub": "mailto:%s".format(current_app.config.get('ADMIN_EMAIL'))
+            "sub": "mailto:{0}".format(current_app.config.get('ADMIN_EMAIL'))
         }
     )
