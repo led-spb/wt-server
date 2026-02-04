@@ -47,14 +47,6 @@ def update_user_info():
     db.session.commit()
     return UserSchema().dump(current_user)
 
-class SubscriptionInfoSchema(Schema):
-    public_key = fields.String(data_key='publicKey')
-
-@users.get('/subscription/key')
-@jwt_required()
-def get_subscription_key():
-    return SubscriptionInfoSchema().dump(dict(public_key=app.config.get('VAPID_PUBLIC_KEY')))
-
 class AccentSchema(Schema):
     position = fields.Int()
 

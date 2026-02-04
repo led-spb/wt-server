@@ -4,4 +4,4 @@
 ###
 # @ref auth
 GET http://localhost:5000/api/accents/task?tags[]=2
-Authorization: Bearer {{ auth.access_token }}
+Authorization: Bearer {{ auth.accessToken }}

@@ -1,6 +1,5 @@
 ###
 # @name auth
-# @no-log
 POST http://localhost:5000/api/auth/token
 Content-Type: application/json
 

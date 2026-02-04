@@ -1,6 +1,5 @@
 from . import db
 import datetime
-from typing import List
 from sqlalchemy import Integer, String, ForeignKey, Date, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -52,4 +51,16 @@ class UserReport(db.Model):
     __tablename__ = 'user_reports'
 
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), primary_key=True)
-    reports: Mapped[List['int']] = mapped_column(JSONB, nullable=True)
+    reports: Mapped[list['int']] = mapped_column(JSONB, nullable=True)
+
+
+class WebPushSubscription(db.Model):
+    __tablename__ = 'web_pushes'
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
+    endpoint: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    push_info: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(), nullable=False, default=datetime.datetime.now())
+
+    user: Mapped[User] = relationship()

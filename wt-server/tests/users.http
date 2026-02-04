@@ -3,15 +3,12 @@
 ###
 # @ref auth
 GET http://localhost:5000/api/user
-Authorization: Bearer {{ auth.access_token }}
+Authorization: Bearer {{ auth.accessToken }}
 
 ###
 # @ref auth
-GET http://localhost:5000/api/user/subscription/key
-Authorization: Bearer {{ auth.access_token }}
-
 PUT http://localhost:5000/api/user
-Authorization: Bearer {{ auth.access_token }}
+Authorization: Bearer {{ auth.accessToken }}
 Content-Type: application/json
 
 {"dailyGoal": 100}
@@ -20,27 +17,27 @@ Content-Type: application/json
 ###
 # @ref auth
 GET http://localhost:5000/api/user/progress
-Authorization: Bearer {{ auth.access_token }}
+Authorization: Bearer {{ auth.accessToken }}
 
 ###
 # @ref auth
 GET http://localhost:5000/api/user/stat
-Authorization: Bearer {{ auth.access_token }}
+Authorization: Bearer {{ auth.accessToken }}
 ###
 # @ref auth
 GET http://localhost:5000/api/user/troubles
-Authorization: Bearer {{ auth.access_token }}
+Authorization: Bearer {{ auth.accessToken }}
 
 
 ###
 # @ref auth
 GET http://localhost:5000/api/user/rating?days=20
-Authorization: Bearer {{ auth.access_token }}
+Authorization: Bearer {{ auth.accessToken }}
 
 ###
 # @ref auth
 PUT http://localhost:5000/api/user/stat
-Authorization: Bearer {{ auth.access_token }}
+Authorization: Bearer {{ auth.accessToken }}
 Content-Type: application/json
 
 {
@@ -51,7 +48,7 @@ Content-Type: application/json
 ###
 # @ref auth
 PUT http://localhost:5000/api/user/report
-Authorization: Bearer {{ auth.access_token }}
+Authorization: Bearer {{ auth.accessToken }}
 Content-Type: application/json
 
 { "word": 1}

@@ -1,0 +1,26 @@
+# @import ./auth.http
+
+###
+# @ref auth
+GET http://localhost:5000/api/user/push/key
+Authorization: Bearer {{ auth.accessToken }}
+
+?? status == 200
+
+
+###
+# @ref auth
+POST http://localhost:5000/api/user/push/register
+Authorization: Bearer {{ auth.accessToken }}
+Content-Type: application/json
+
+{}
+
+
+###
+# @ref auth
+POST http://localhost:5000/api/user/push/unregister
+Authorization: Bearer {{ auth.accessToken }}
+Content-Type: application/json
+
+{}
