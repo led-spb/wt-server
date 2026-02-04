@@ -21,7 +21,6 @@ class UserSchema(Schema):
 class UpdateUserSchema(Schema):
     name = fields.Str()
     daily_goal = fields.Integer(data_key='dailyGoal')
-    notify_info = fields.String(data_key='notifyInfo', allow_none=True, load_default='')
 
 
 @users.get('')
@@ -41,8 +40,6 @@ def update_user_info():
         current_user.updated_at = datetime.now()
     if data.get('daily_goal') is not None:
         current_user.daily_goal = data.get('daily_goal')
-    if data.get('notify_info') != '':
-        current_user.notify_info = data.get('notify_info')
     
     db.session.commit()
     return UserSchema().dump(current_user)
