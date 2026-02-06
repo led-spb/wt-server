@@ -13,6 +13,18 @@ Content-Type: application/json
 
 {"dailyGoal": 100}
 
+###
+# @ref auth
+POST  http://localhost:5000/api/user/avatar
+Authorization: Bearer {{ auth.accessToken }}
+Content-Type: multipart/form-data; boundary=WebKitFormBoundary
+
+--WebKitFormBoundary
+Content-Disposition: form-data; name="file"; filename="example.jpg"
+Content-Type: image/png
+
+< ./example.jpg
+--WebKitFormBoundary--
 
 ###
 # @ref auth

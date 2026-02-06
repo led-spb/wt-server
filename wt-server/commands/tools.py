@@ -1,4 +1,5 @@
 import json
+import logging
 import click
 from typing import List
 from flask import current_app
@@ -150,11 +151,17 @@ def cascade_delete_words(words :List[Word]):
 @click.argument('message', type=str)
 def notify(login: str, message: str):
     user = UserService.get_user_by_login(login)
-    if user is None or user.notify_info is None:
+    logging.warning(f'User: {user.name}')    
+    if user is None:
+        return
+    
+    push = next(iter(sorted(user.pushes, reverse=True, key=lambda p: p.created_at)), None)
+    logging.warning(f'Push: {push}')    
+    if push is None:
         return
 
     pywebpush.webpush(
-        subscription_info=json.loads(user.notify_info),
+        subscription_info=json.loads(push.push_info),
         data=json.dumps(dict(title='Тренажер слов', body=message)),
         vapid_private_key=current_app.config.get('VAPID_PRIVATE_KEY'),
         vapid_claims={

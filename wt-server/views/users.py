@@ -1,3 +1,5 @@
+import uuid
+import os.path
 from flask import Blueprint, jsonify, request, current_app as app
 from ..models import db
 from ..models.user import UserReport
@@ -16,6 +18,7 @@ class UserSchema(Schema):
     login = fields.Str(required=True)
     name = fields.Str(required=True)
     daily_goal = fields.Integer(data_key='dailyGoal')
+    avatar_image = fields.String(data_key='avatar')
 
 
 class UpdateUserSchema(Schema):
@@ -42,6 +45,22 @@ def update_user_info():
         current_user.daily_goal = data.get('daily_goal')
     
     db.session.commit()
+    return UserSchema().dump(current_user)
+
+@users.post('/avatar')
+@jwt_required()
+def update_user_avatar():
+    file = request.files.get('file')
+    if file is None or file.filename == "":
+        raise ValidationError("file is not provided")
+    
+
+    uniq_filename = str(uuid.uuid4())
+    file.save(os.path.join(app.config.get('UPLOAD_DIR'), uniq_filename))
+
+    current_user.avatar_image = uniq_filename
+    db.session.commit()
+
     return UserSchema().dump(current_user)
 
 class AccentSchema(Schema):

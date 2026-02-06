@@ -4,3 +4,4 @@ venv
 *.bak
 *.csv
 imports/*
+uploads
