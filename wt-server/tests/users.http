@@ -11,7 +11,7 @@ PUT http://localhost:5000/api/user
 Authorization: Bearer {{ auth.accessToken }}
 Content-Type: application/json
 
-{"dailyGoal": 100}
+{"name": "           "}
 
 ###
 # @ref auth

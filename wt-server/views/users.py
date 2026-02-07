@@ -21,8 +21,14 @@ class UserSchema(Schema):
     avatar_image = fields.String(data_key='avatar')
 
 
+def name_validation(value):
+    if str(value).strip() == '':
+        raise ValidationError('Value must be not empty')
+    if not (4 <= len(str(value).strip()) <= 16):
+        raise ValidationError('Value length must be in range')
+
 class UpdateUserSchema(Schema):
-    name = fields.Str()
+    name = fields.Str(validate=name_validation)
     daily_goal = fields.Integer(data_key='dailyGoal')
 
 
@@ -39,7 +45,7 @@ def update_user_info():
         if current_user.updated_at is not None \
             and datetime.now() - current_user.updated_at < timedelta(days=7):
             raise ValidationError("Forbbiden to change name", field_name='name')
-        current_user.name = data.get('name')
+        current_user.name = data.get('name').strip()
         current_user.updated_at = datetime.now()
     if data.get('daily_goal') is not None:
         current_user.daily_goal = data.get('daily_goal')
