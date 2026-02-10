@@ -1,0 +1,26 @@
+# @import ./auth.http
+
+###
+# @ref auth
+GET http://localhost:5000/api/user/stat
+Authorization: Bearer {{ auth.accessToken }}
+###
+# @ref auth
+GET http://localhost:5000/api/user/stat/words
+Authorization: Bearer {{ auth.accessToken }}
+
+###
+# @ref auth
+GET http://localhost:5000/api/user/stat/tags
+Authorization: Bearer {{ auth.accessToken }}
+
+###
+# @ref auth
+PUT http://localhost:5000/api/user/stat
+Authorization: Bearer {{ auth.accessToken }}
+Content-Type: application/json
+
+{
+    "success": [],
+    "failed": []
+}

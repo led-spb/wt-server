@@ -1,9 +1,10 @@
 import uuid
 import os.path
-from flask import Blueprint, jsonify, request, current_app as app
+from flask import Blueprint, request, current_app as app
 from ..models import db
 from ..models.user import UserReport
-from ..services.users import UserService, UserStatService
+from ..services.users import UserService
+from ..services.stats import UserStatService
 from ..services.invites import InvitesService
 from ..services.words import WordService
 from datetime import date, datetime, timedelta
@@ -69,41 +70,29 @@ def update_user_avatar():
 
     return UserSchema().dump(current_user)
 
-class AccentSchema(Schema):
-    position = fields.Int()
 
-class SpellingSchema(Schema):
-    position = fields.Int()
-    length = fields.Int()
-    variants = fields.List(fields.String())
+class RegisterUserSchema(Schema):
+    invite = fields.String(required=True)
+    login = fields.String(required=True, validate=validate.Regexp(r'^[a-zA-Z][a-zA-Z0-9_]{3,}$'))
+    password = fields.String(required=True)
 
-class WordSchema(Schema):
-    id = fields.Int(dump_only=True, required=True)
-    fullword = fields.Str(required=True)
-    context = fields.Str()
-    description = fields.Str()
-    level = fields.Int(required=True)
-    spellings = fields.Nested(SpellingSchema, many=True)
-    accents = fields.Pluck(AccentSchema, 'position', many=True)
+@users.post('/register')
+def register_user():
+    data = RegisterUserSchema().load(request.get_json())
 
-class StatisticSchema(Schema):
-    success = fields.Int()
-    failed = fields.Int()
-    total = fields.Method("get_total")
-    precent = fields.Method("get_precent")
+    if not InvitesService.invite_is_valid(data.get('invite')):
+        raise ValidationError('Invite is invalid', field_name='invite')
 
-    def get_total(self, obj):
-        return obj.success + obj.failed
+    if UserService.get_user_by_login(data.get('login')) is not None:
+        raise ValidationError('User is already exists', field_name='login')
+    
+    UserService.register_user(
+        login=data.get('login'),
+        password=data.get('password'),
+        invite=data.get('invite')
+    )
 
-    def get_precent(self, obj):
-        return obj.success / self.get_total(obj)
-
-class WordStatSchema(StatisticSchema):
-    word = fields.Nested(WordSchema)
-
-class DayStatSchema(StatisticSchema):
-    recorded_at = fields.Date()
-
+    return '', 204
 
 class GoalSchema(Schema):
     total = fields.Integer()
@@ -113,10 +102,6 @@ class UserProgressSchema(Schema):
     series = fields.Integer()
     overall = fields.Nested(GoalSchema)
     today = fields.Nested(GoalSchema)
-
-class UpdateUserStateSchema(Schema):
-    failed = fields.List(fields.Int)
-    success = fields.List(fields.Int)
 
 
 @users.get('/progress')
@@ -153,20 +138,6 @@ def get_user_progress():
     }
     return UserProgressSchema().dump(result)
 
-
-@users.get('/troubles')
-@jwt_required()
-def get_user_troubles():
-    failed_words = UserStatService.get_user_word_failed(current_user, count=10)
-    return WordStatSchema().dump(failed_words, many=True)
-
-@users.get('/stat')
-@jwt_required()
-def get_user_stat():
-    stats = UserStatService.get_user_stats(current_user, days=14)
-    return DayStatSchema().dump(stats, many=True)
-
-
 class UserRatingSchema(Schema):
     user = fields.Nested(UserSchema)
     success = fields.Integer()
@@ -174,6 +145,7 @@ class UserRatingSchema(Schema):
     total = fields.Integer()
     progress = fields.Integer()
     progress_pct = fields.Float()
+
 
 @users.get('/rating')
 @jwt_required()
@@ -199,18 +171,6 @@ def get_rating():
         many=True
     )
 
-@users.put('/stat')
-@jwt_required()
-def update_user_stat():
-    data = UpdateUserStateSchema().load(
-        request.get_json()
-    )
-    UserStatService.update_user_stat(
-        current_user,
-        success=data.get('success', []),
-        failed=data.get('failed', [])
-    )
-    return '', 204
 
 class UserReportSchema(Schema):
     word = fields.Int(required=True)
@@ -230,30 +190,5 @@ def put_user_report():
 
     db.session.add(current_user)
     db.session.commit()
-
-    return '', 204
-
-
-
-class RegisterUserSchema(Schema):
-    invite = fields.String(required=True)
-    login = fields.String(required=True, validate=validate.Regexp(r'^[a-zA-Z][a-zA-Z0-9_]{3,}$'))
-    password = fields.String(required=True)
-
-@users.post('/register')
-def register_user():
-    data = RegisterUserSchema().load(request.get_json())
-
-    if not InvitesService.invite_is_valid(data.get('invite')):
-        raise ValidationError('Invite is invalid', field_name='invite')
-
-    if UserService.get_user_by_login(data.get('login')) is not None:
-        raise ValidationError('User is already exists', field_name='login')
-    
-    UserService.register_user(
-        login=data.get('login'),
-        password=data.get('password'),
-        invite=data.get('invite')
-    )
 
     return '', 204

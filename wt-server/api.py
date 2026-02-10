@@ -23,6 +23,7 @@ def create_api(app: flask.Flask) -> flask.Flask:
     app.register_blueprint(auth, url_prefix='/api/auth')
     app.register_blueprint(users, url_prefix='/api/user')
     app.register_blueprint(pushes, url_prefix='/api/user/push')
+    app.register_blueprint(stats, url_prefix='/api/user/stat')
 
     app.register_blueprint(spellings, url_prefix='/api/spellings')
     app.register_blueprint(accents, url_prefix='/api/accents')

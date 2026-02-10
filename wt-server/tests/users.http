@@ -33,29 +33,9 @@ Authorization: Bearer {{ auth.accessToken }}
 
 ###
 # @ref auth
-GET http://localhost:5000/api/user/stat
-Authorization: Bearer {{ auth.accessToken }}
-###
-# @ref auth
-GET http://localhost:5000/api/user/troubles
-Authorization: Bearer {{ auth.accessToken }}
-
-
-###
-# @ref auth
 GET http://localhost:5000/api/user/rating?days=20
 Authorization: Bearer {{ auth.accessToken }}
 
-###
-# @ref auth
-PUT http://localhost:5000/api/user/stat
-Authorization: Bearer {{ auth.accessToken }}
-Content-Type: application/json
-
-{
-    "success": [],
-    "failed": []
-}
 
 ###
 # @ref auth

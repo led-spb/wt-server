@@ -7,10 +7,15 @@ from flask.cli import AppGroup
 from sqlalchemy import func, distinct
 from sqlalchemy.orm import join, joinedload
 from ..models import db
+from ..models.user import User
 from ..models.word import Word, Spelling, Accent, WordStatistics
+from ..models.stats import UserAggregatedStat
 from ..services.users import UserService
+from ..services.stats import UserStatService
 import pywebpush
 import itertools
+from datetime import date, timedelta
+from dataclasses import dataclass
 
 tools_commands = AppGroup('tools', help='Custom tools')
 
@@ -151,12 +156,12 @@ def cascade_delete_words(words :List[Word]):
 @click.argument('message', type=str)
 def notify(login: str, message: str):
     user = UserService.get_user_by_login(login)
-    logging.warning(f'User: {user.name}')    
+    logging.warning(f'User: {user.name}')
     if user is None:
         return
-    
+
     push = next(iter(sorted(user.pushes, reverse=True, key=lambda p: p.created_at)), None)
-    logging.warning(f'Push: {push}')    
+    logging.warning(f'Push: {push}')
     if push is None:
         return
 
@@ -168,3 +173,66 @@ def notify(login: str, message: str):
             "sub": "mailto:{0}".format(current_app.config.get('ADMIN_EMAIL'))
         }
     )
+
+
+@dataclass
+class Stat:
+    total: int
+    failed: int
+
+@tools_commands.command('gather', help='Gather user statistics')
+def gather_statistics():
+    all_users = db.session.execute(
+        db.select(User)
+    ).scalars()
+    for user in all_users:
+        gather_user_stistics(user, date.today())
+    pass
+
+
+def gather_user_stistics(user :User, stat_date :date):
+    tags = dict()
+    rules = dict()
+
+    db.session.execute(
+        db.delete(
+            UserAggregatedStat
+        ).filter(
+            UserAggregatedStat.user_id == user.id
+        ).filter(
+            UserAggregatedStat.recorded_at == stat_date
+        )
+    )
+    for info in UserStatService.get_user_words_statistics(user):
+        for tag_id in info.word.tags or []:
+            if tag_id not in tags:
+                tags[tag_id] = Stat(0, 0)
+            tags[tag_id].total += info.failed+info.success
+            tags[tag_id].failed += info.failed
+        for rule_id in info.word.rules or []:
+            if rule_id not in rules:
+                rules[rule_id] = Stat(0, 0)
+            rules[rule_id].total += info.failed+info.success
+            rules[rule_id].failed += info.failed
+
+    for tag_id, stat in tags.items():
+        db.session.add(
+            UserAggregatedStat(
+                user_id=user.id,
+                tag_id=tag_id,
+                total=stat.total,
+                failed=stat.failed,
+                recorded_at=stat_date,
+            )
+        )
+    #for rule_id, stat in rules.items():
+    #    db.session.add(
+    #        UserAggregatedStat(
+    #            user_id=user.id,
+    #            rule_id=rule_id,
+    #            total=stat.total,
+    #            failed=stat.failed,
+    #            recorded_at=stat_date,
+    #        )
+    #    )
+    db.session.commit()

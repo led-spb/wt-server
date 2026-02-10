@@ -1,12 +1,12 @@
-from . import db
+from . import Base
 import datetime
-from sqlalchemy import Integer, String, ForeignKey, Date, DateTime
+from sqlalchemy import Integer, String, ForeignKey, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
-class User(db.Model):
+class User(Base):
     __tablename__ = 'users'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -25,19 +25,7 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-
-class UserStat(db.Model):
-    __tablename__ = 'users_stat'
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    recorded_at: Mapped[datetime.date] = mapped_column(Date(), default=datetime.date.today)
-
-    success: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    failed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-
-
-class Invite(db.Model):
+class Invite(Base):
     __tablename__ = 'invites'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -48,14 +36,14 @@ class Invite(db.Model):
     registered_user: Mapped[User] = relationship()
 
 
-class UserReport(db.Model):
+class UserReport(Base):
     __tablename__ = 'user_reports'
 
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), primary_key=True)
     reports: Mapped[list['int']] = mapped_column(JSONB, nullable=True)
 
 
-class WebPushSubscription(db.Model):
+class WebPushSubscription(Base):
     __tablename__ = 'web_pushes'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

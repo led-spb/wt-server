@@ -1,12 +1,12 @@
 from enum import Enum
-from . import db
+from . import Base
 from typing import List
 from sqlalchemy import Integer, String, Text, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
-class Word(db.Model):
+class Word(Base):
     __tablename__ = 'words'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -21,7 +21,7 @@ class Word(db.Model):
     accents: Mapped[List['Accent']] = relationship(cascade='all,delete')
 
 
-class Spelling(db.Model):
+class Spelling(Base):
     __tablename__ = 'spellings'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -31,7 +31,7 @@ class Spelling(db.Model):
     variants: Mapped[List['str']] = mapped_column(JSON)
 
 
-class Accent(db.Model):
+class Accent(Base):
     __tablename__ = 'accents'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -39,7 +39,7 @@ class Accent(db.Model):
     position: Mapped[int] = mapped_column(nullable=False)
 
 
-class WordStatistics(db.Model):
+class WordStatistics(Base):
     __tablename__ = 'word_statistics'
 
     word_id: Mapped[int] = mapped_column(ForeignKey("words.id"), primary_key=True)
@@ -55,7 +55,7 @@ class TaskTypeEnum(Enum):
     spelling = 'spelling'
     accent = 'accent'
 
-class Tag(db.Model):
+class Tag(Base):
     __tablename__ = 'tags'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -63,7 +63,7 @@ class Tag(db.Model):
     type: Mapped[TaskTypeEnum] = mapped_column(String(20), nullable=False)
 
 
-class Rule(db.Model):
+class Rule(Base):
     __tablename__ = 'rules'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
