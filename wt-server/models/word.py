@@ -13,7 +13,6 @@ class Word(Base):
     level: Mapped[int] = mapped_column(Integer, nullable=False)
     fullword: Mapped[str] = mapped_column(String(50), nullable=False, name='full_word')
     context: Mapped[str] = mapped_column(String(500), nullable=True)
-    description: Mapped[str] = mapped_column(String(1000), nullable=True)
     tags: Mapped[List['int']] = mapped_column(JSONB, nullable=True)
     rules: Mapped[List['int']] = mapped_column(JSONB, nullable=True)
 
