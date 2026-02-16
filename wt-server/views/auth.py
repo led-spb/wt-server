@@ -13,16 +13,14 @@ def user_lookup(identity):
     return UserService.get_user_by_id(identity)
 
 class UserLoginSchema(Schema):
-    login = fields.String(required=True)
+    email = fields.String(required=True)
     password = fields.String(required=True)
 
 @auth.route('/token', methods=['POST'])
 def token():
-    data = UserLoginSchema().load(
-        request.get_json()
-    )
+    data = UserLoginSchema().load(request.get_json())
 
-    auth_user = UserService.get_user_by_login(data.get('login'))
+    auth_user = UserService.get_user_by_email(email=data.get('email'))
     if auth_user is not None and auth_user.check_password(data.get('password')):
         access_token = create_access_token(identity=auth_user)
         #refresh_token = create_refresh_token(identity='default')

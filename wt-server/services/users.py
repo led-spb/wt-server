@@ -12,14 +12,14 @@ class UserService:
         ).scalar_one_or_none()
 
     @classmethod
-    def get_user_by_login(cls, login :str) -> User|None:
+    def get_user_by_email(cls, email :str) -> User|None:
         return db.session.execute(
-            db.select(User).filter(User.login == login)
+            db.select(User).filter(User.email == email)
         ).scalar_one_or_none()
     
     @classmethod
-    def register_user(cls, login :str, password :str, invite :str|None) -> User:
-        new_user = User(login=login, name=login)
+    def register_user(cls, email :str, name: str, password :str, invite :str|None) -> User:
+        new_user = User(email=email, name=name)
         new_user.set_password(password)
         db.session.add(new_user)
         

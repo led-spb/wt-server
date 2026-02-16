@@ -152,10 +152,10 @@ def cascade_delete_words(words :List[Word]):
         db.session.commit()
 
 @tools_commands.command('notify')
-@click.argument('login', type=str)
+@click.argument('email', type=str)
 @click.argument('message', type=str)
-def notify(login: str, message: str):
-    user = UserService.get_user_by_login(login)
+def notify(email: str, message: str):
+    user = UserService.get_user_by_email(email)
     logging.warning(f'User: {user.name}')
     if user is None:
         return

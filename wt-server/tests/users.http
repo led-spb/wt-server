@@ -50,4 +50,4 @@ Content-Type: application/json
 POST http://localhost:5000/api/user/register
 Content-Type: application/json
 
-{"login": "megatron_1981", "password": "12", "invite": "rrrrr"}
+{"email": "megatron_1981", "password": "12", "invite": "rrrrr"}

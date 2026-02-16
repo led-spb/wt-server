@@ -11,25 +11,24 @@ user_commands = AppGroup('user', help='Manage application users.')
 
 
 @user_commands.command('create', help='Register new user')
+@click.argument('email', default=None)
 @click.argument('name', default=None)
-def create_user(name=None):
-    if name is None:
-        name = click.prompt('username')
+def create_user(email=None, name=None):
+    name = name or click.prompt('username')
+    email = email or click.prompt('username')
     password = click.prompt('password', hide_input=True, confirmation_prompt=True)
-
-    if UserService.get_user_by_login(name):
+    if UserService.get_user_by_email(email=email):
         raise RuntimeError('User is already exists')
-    UserService.register_user(name, password, None)
+    UserService.register_user(email=email, name=name, password=password, invite=None)
 
 
 @user_commands.command('password', help='Change user password')
-@click.argument('name', default=None)
-def reset_password(name=None):
-    if name is None:
-        name = click.prompt('username')
+@click.argument('email', default=None)
+def reset_password(email=None):
+    email = email or click.prompt('email')
     password = click.prompt('password', hide_input=True, confirmation_prompt=True)
 
-    user = UserService.get_user_by_login(name)
+    user = UserService.get_user_by_email(email)
     if user is None:
         raise RuntimeError('User is not found')
     user.set_password(password)

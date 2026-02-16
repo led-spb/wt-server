@@ -10,7 +10,7 @@ class User(Base):
     __tablename__ = 'users'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    login: Mapped[str] = mapped_column(String(32), nullable=False, unique=True)
+    email: Mapped[str] = mapped_column(String(32), nullable=False, unique=True)
     name: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(String(512), nullable=False)
     daily_goal: Mapped[int] = mapped_column(Integer, nullable=False, default=50)

@@ -14,23 +14,28 @@ from flask_jwt_extended import jwt_required, current_user
 
 users = Blueprint('users', __name__)
 
-class UserSchema(Schema):
-    id = fields.Int(required=True, dump_only=True)
-    login = fields.Str(required=True)
-    name = fields.Str(required=True)
-    daily_goal = fields.Integer(data_key='dailyGoal')
-    avatar_image = fields.String(data_key='avatar')
-
-
 def name_validation(value):
     if str(value).strip() == '':
         raise ValidationError('Value must be not empty')
     if not (4 <= len(str(value).strip()) <= 16):
         raise ValidationError('Value length must be in range')
 
+class UserSchema(Schema):
+    id = fields.Int(required=True, dump_only=True)
+    email = fields.Email(required=True)
+    name = fields.Str(required=True, validate=name_validation)
+    daily_goal = fields.Integer(data_key='dailyGoal')
+    avatar_image = fields.String(data_key='avatar')
+
 class UpdateUserSchema(Schema):
     name = fields.Str(validate=name_validation)
     daily_goal = fields.Integer(data_key='dailyGoal')
+
+class RegisterUserSchema(Schema):
+    invite = fields.String(required=True)
+    email = fields.Email(required=True)
+    name = fields.Str(required=True, validate=name_validation)
+    password = fields.String(required=True)
 
 
 @users.get('')
@@ -71,11 +76,6 @@ def update_user_avatar():
     return UserSchema().dump(current_user)
 
 
-class RegisterUserSchema(Schema):
-    invite = fields.String(required=True)
-    login = fields.String(required=True, validate=validate.Regexp(r'^[a-zA-Z][a-zA-Z0-9_]{3,}$'))
-    password = fields.String(required=True)
-
 @users.post('/register')
 def register_user():
     data = RegisterUserSchema().load(request.get_json())
@@ -83,11 +83,12 @@ def register_user():
     if not InvitesService.invite_is_valid(data.get('invite')):
         raise ValidationError('Invite is invalid', field_name='invite')
 
-    if UserService.get_user_by_login(data.get('login')) is not None:
-        raise ValidationError('User is already exists', field_name='login')
+    if UserService.get_user_by_email(email=data.get('email')) is not None:
+        raise ValidationError('User is already exists', field_name='email')
     
     UserService.register_user(
-        login=data.get('login'),
+        email=data.get('email'),
+        name=data.get('name'),
         password=data.get('password'),
         invite=data.get('invite')
     )
