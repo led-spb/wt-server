@@ -8,7 +8,8 @@ tags = Blueprint('tags', __name__)
 
 class TagsSchema(Schema):
     id = fields.Int()
-    desciption = fields.String()
+    parent_id = fields.Int()
+    description = fields.String()
     type = fields.String()
 
 

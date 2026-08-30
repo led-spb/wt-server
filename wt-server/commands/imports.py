@@ -100,6 +100,7 @@ def is_vowel(chr) -> bool:
 
 
 def create_word(data :ImportWord, level :int, skip_exists :bool):
+    #current_app.logger.warning(f'find word {data.fullword} ({data.context})')
     word = WordService.find_by_name(data.fullword.lower(), data.context)
     if word is not None and skip_exists:
         return word

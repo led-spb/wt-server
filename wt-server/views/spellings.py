@@ -5,6 +5,8 @@ from ..services.spellings import SpellingService
 from ..services.words import WordService
 from marshmallow import Schema, fields
 from flask_jwt_extended import jwt_required, current_user
+from sqlalchemy import or_
+
 
 spellings = Blueprint('spellings', __name__)
 
@@ -35,24 +37,23 @@ def prepare_task():
     errors = min(request.args.get('errors', 0, type=int), count)
     tags = request.args.getlist('tags[]', int)
 
+    default_filters = [Word.level <= level,]
+    if len(tags) > 0:
+        default_filters.append(
+            or_(*[Word.tags.contains([tag]) for tag in tags])
+        )
+
     failed = SpellingService.get_with_user_stats(
         user=current_user, 
-        filters=[
-            WordStatistics.failed >0, 
-            Word.level <= level,
-            Word.tags.contains(tags),
-        ],
+        filters=default_filters + [ WordStatistics.failed >0, ],
         order_by=[WordStatistics.success/WordStatistics.failed, order_desc(WordStatistics.failed), order_random()],
         count=errors
     )
+    
 
     new = SpellingService.get_with_user_stats(
         user=current_user,
-        filters=[
-            Word.level <= level,
-            Word.id.notin_([failed.id for failed in failed]),
-            Word.tags.contains(tags),
-        ],
+        filters=default_filters + [ Word.id.notin_([failed.id for failed in failed]), ],
         order_by=[
             nulls_first(WordStatistics.success + WordStatistics.failed), 
             order_random()

@@ -79,7 +79,7 @@ def update_user_stat():
 
 class TagSchema(Schema):
     id = fields.Int()
-    desciption = fields.String(data_key='title')
+    description = fields.String(data_key='title')
     type = fields.String()
 
 

@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload
 class SpellingService:
 
     @classmethod
-    def find_by_word(cls, word: str, context :str = None) -> list[Word]:
+    def find_by_word(cls, word: str, context :str|None = None) -> list[Word]:
         query = db.select(
             Word
         ).options(

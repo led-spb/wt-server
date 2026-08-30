@@ -58,7 +58,8 @@ class Tag(Base):
     __tablename__ = 'tags'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    desciption: Mapped[str] = mapped_column(String(250), nullable=False)
+    parent_id: Mapped[int] = mapped_column(Integer, nullable=True)
+    description: Mapped[str] = mapped_column(String(250), nullable=False)
     type: Mapped[TaskTypeEnum] = mapped_column(String(20), nullable=False)
 
 

@@ -12,7 +12,7 @@ class WordService:
         ).scalar_one_or_none()
 
     @classmethod
-    def find_by_name(cls, word_name: str, context :str = None) -> Word | None:
+    def find_by_name(cls, word_name: str, context :str|None = None) -> Word | None:
         query = db.select(
             Word
         ).filter(
@@ -33,7 +33,7 @@ class WordService:
     @classmethod
     def get_tags_dictonary(cls) -> list[Tag]:
         tags = db.session.execute(
-            db.select(Tag).order_by(Tag.desciption)
+            db.select(Tag).order_by(Tag.description)
         ).scalars().all()
 
         return tags
@@ -45,7 +45,7 @@ class WordService:
         ).scalar_one_or_none()
 
     @classmethod
-    def search_rules(cls, title :str = None, page :int = 1, limit :int = 10) -> Pagination: 
+    def search_rules(cls, title :str|None = None, page :int = 1, limit :int = 10) -> Pagination: 
         return db.paginate(
             db.select(
                 Rule
