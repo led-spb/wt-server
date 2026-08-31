@@ -105,3 +105,15 @@ def get_stats_by_tags():
        curr.prev = prev.get(curr.tag.id)
   
     return TagsStatisticsSchema().dump(current, many=True)
+
+
+class TopicsReportSchema(StatisticSchema):
+    id = fields.Int()
+    description = fields.Str()
+
+
+@stats.get('/topics')
+@jwt_required()
+def get_stats_by_topics():
+    data = UserStatService.get_user_topics_stat(current_user)
+    return TopicsReportSchema().dump(data, many=True)
