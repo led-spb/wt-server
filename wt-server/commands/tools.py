@@ -4,11 +4,11 @@ import click
 from typing import List
 from flask import current_app
 from flask.cli import AppGroup
-from sqlalchemy import func, distinct
+from sqlalchemy import func, distinct, cast, Numeric, or_
 from sqlalchemy.orm import join, joinedload
 from ..models import db
 from ..models.user import User
-from ..models.word import Word, Spelling, Accent, WordStatistics
+from ..models.word import Word, Spelling, Accent, WordStatistics, Tag
 from ..models.stats import UserAggregatedStat
 from ..services.users import UserService
 from ..services.stats import UserStatService
@@ -176,64 +176,39 @@ def notify(email: str, message: str):
     )
 
 
-@dataclass
-class Stat:
-    total: int
-    failed: int
-
 @tools_commands.command('gather', help='Gather user statistics')
 def gather_statistics():
-    all_users = db.session.execute(
-        db.select(User)
-    ).scalars()
-    for user in all_users:
-        gather_user_stistics(user, date.today())
-    pass
-
-
-def gather_user_stistics(user :User, stat_date :date):
-    tags = dict()
-    rules = dict()
-
     db.session.execute(
         db.delete(
             UserAggregatedStat
         ).filter(
-            UserAggregatedStat.user_id == user.id
-        ).filter(
-            UserAggregatedStat.recorded_at == stat_date
-        )
-    )
-    for info in UserStatService.get_user_words_statistics(user):
-        for tag_id in info.word.tags or []:
-            if tag_id not in tags:
-                tags[tag_id] = Stat(0, 0)
-            tags[tag_id].total += info.failed+info.success
-            tags[tag_id].failed += info.failed
-        for rule_id in info.word.rules or []:
-            if rule_id not in rules:
-                rules[rule_id] = Stat(0, 0)
-            rules[rule_id].total += info.failed+info.success
-            rules[rule_id].failed += info.failed
-
-    for tag_id, stat in tags.items():
-        db.session.add(
-            UserAggregatedStat(
-                user_id=user.id,
-                tag_id=tag_id,
-                total=stat.total,
-                failed=stat.failed,
-                recorded_at=stat_date,
+            or_(
+                UserAggregatedStat.recorded_at == date.today(),
+                UserAggregatedStat.recorded_at < date.today() - timedelta(days=60)
             )
         )
-    #for rule_id, stat in rules.items():
-    #    db.session.add(
-    #        UserAggregatedStat(
-    #            user_id=user.id,
-    #            rule_id=rule_id,
-    #            total=stat.total,
-    #            failed=stat.failed,
-    #            recorded_at=stat_date,
-    #        )
-    #    )
+    )
+
+    words_query = db.select(
+        Word.id.label('word_id'),
+        cast(func.jsonb_array_elements(Word.tags), Numeric).label('tag_id')
+    ).subquery()
+
+    query = db.select(
+        WordStatistics.user_id,
+        Tag.id.label('tag_id'),
+        func.sum(WordStatistics.success+WordStatistics.failed).label('total'),
+        func.sum(WordStatistics.failed).label('failed')
+    ).join(
+        words_query, WordStatistics.word_id == words_query.c.word_id
+    ).join(
+        Tag, words_query.c.tag_id == Tag.id
+    ).group_by(
+        WordStatistics.user_id, Tag.id, Tag.description
+    )
+
+    db.session.execute(
+        db.insert(UserAggregatedStat).from_select(["user_id", "tag_id", "total", "failed"], query)
+    )
     db.session.commit()
+    pass
