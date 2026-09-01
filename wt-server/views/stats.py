@@ -6,7 +6,7 @@ from marshmallow import Schema, fields
 from flask_jwt_extended import jwt_required, current_user
 
 
-stats = Blueprint('stats', __name__)
+stats_view = Blueprint('stats', __name__)
 
 
 class AccentSchema(Schema):
@@ -30,12 +30,12 @@ class StatisticSchema(Schema):
     success = fields.Int()
     failed = fields.Int()
     total = fields.Method("get_total")
-    precent = fields.Method("get_precent")
+    percent = fields.Method("get_percent")
 
     def get_total(self, obj):
         return obj.success + obj.failed
 
-    def get_precent(self, obj):
+    def get_percent(self, obj):
         return obj.success / self.get_total(obj)
 
 class WordStatSchema(StatisticSchema):
@@ -44,14 +44,14 @@ class WordStatSchema(StatisticSchema):
 class DayStatSchema(StatisticSchema):
     recorded_at = fields.Date()
 
-@stats.get('')
+@stats_view.get('')
 @jwt_required()
 def get_user_stat():
     stats = UserStatService.get_user_stats(current_user, days=14)
     return DayStatSchema().dump(stats, many=True)
 
 
-@stats.get('/words')
+@stats_view.get('/words')
 @jwt_required()
 def get_user_troubles():
     failed_words = UserStatService.get_user_word_failed(current_user, count=10)
@@ -63,15 +63,15 @@ class UpdateUserStateSchema(Schema):
     success = fields.List(fields.Int)
 
 
-@stats.put('')
+@stats_view.put('')
 @jwt_required()
 def update_user_stat():
-    data = UpdateUserStateSchema().load(
-        request.get_json()
-    )
+    data = UpdateUserStateSchema().load(request.get_json())
+    assert data is not None and isinstance(data, dict)
+
     UserStatService.update_user_stat(
         current_user,
-        success_words=data.get('success'),
+        success_words=data.get('success'), 
         failed_words=data.get('failed')
     )
     return '', 204
@@ -90,7 +90,7 @@ class TagsStatisticsSchema(Schema):
     prev = fields.Nested("TagsStatisticsSchema", only=['total', 'failed'])
 
 
-@stats.get('/tags')
+@stats_view.get('/tags')
 @jwt_required()
 def get_stats_by_tags():
     #current_period = date.today() - timedelta(days=date.today().weekday())
@@ -112,7 +112,7 @@ class TopicsReportSchema(StatisticSchema):
     description = fields.Str()
 
 
-@stats.get('/topics')
+@stats_view.get('/topics')
 @jwt_required()
 def get_stats_by_topics():
     data = UserStatService.get_user_topics_stat(current_user)

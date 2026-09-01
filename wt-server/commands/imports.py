@@ -15,7 +15,7 @@ imports_commands = AppGroup('import', help='Import data')
 @dataclass
 class ImportWord:
     fullword: str
-    context: str
+    context: str|None
     spellings: List[str]
 
 class WordImportSchema(Schema):
@@ -52,6 +52,8 @@ class CSVReader:
         return line.split(';')
 
     def __next__(self) -> ImportWord:
+        assert self.fp is not None
+
         while True:
             data = self.split_csv(next(self.fp))
 
@@ -61,7 +63,13 @@ class CSVReader:
 
             context = next(iter(data[1:2]), '').strip()
             spellings = [item.strip() for item in data[2:] if item.strip() !='']
-            return self.schema.load({'fullword': word, 'context': None if context == '' else context, 'spellings': spellings})
+
+            #return self.schema.load({'fullword': word, 'context': None if context == '' else context, 'spellings': spellings})
+            return ImportWord(
+                fullword=word,
+                context=None if context == '' else context,
+                spellings=spellings
+            )
         pass
 
 
@@ -100,7 +108,6 @@ def is_vowel(chr) -> bool:
 
 
 def create_word(data :ImportWord, level :int, skip_exists :bool):
-    #current_app.logger.warning(f'find word {data.fullword} ({data.context})')
     word = WordService.find_by_name(data.fullword.lower(), data.context)
     if word is not None and skip_exists:
         return word
@@ -119,7 +126,7 @@ def create_word(data :ImportWord, level :int, skip_exists :bool):
     return word
 
 
-def create_accent(word :Word, variant :str) -> Word:
+def create_accent(word :Word, variant :str) -> None:
     accent_position = next(
         (idx for idx, chr in enumerate(variant) if chr.isupper() and is_vowel(chr)), None)
     if accent_position is not None:

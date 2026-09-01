@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required, current_user
 from marshmallow import Schema, fields
 
 
-pushes = Blueprint('pushes', __name__)
+pushes_view = Blueprint('pushes', __name__)
 
 
 class SubscriptionKeysSchema(Schema):
@@ -16,18 +16,22 @@ class SubscriptionSchema(Schema):
     expirationTime = fields.Integer(allow_none=True)
     keys = fields.Nested(SubscriptionKeysSchema, required=True)
 
-@pushes.route('/register', methods=['POST'])
+@pushes_view.route('/register', methods=['POST'])
 @jwt_required()
 def register():
-    data = SubscriptionSchema().load(request.get_json())
+    data = SubscriptionSchema().load(request.get_json(), many=False)
+    assert data is not None and isinstance(data, dict)
+
     WebPushService.register_web_push(current_user, data)
     return '', 204
 
 
-@pushes.route('/unregister', methods=['POST'])
+@pushes_view.route('/unregister', methods=['POST'])
 @jwt_required()
 def unregister():
-    data = SubscriptionSchema().load(request.get_json())
+    data = SubscriptionSchema().load(request.get_json(), many=True)
+    assert data is not None and isinstance(data, dict)
+
     WebPushService.unregister_web_push(current_user, data)
     return '', 204
 
@@ -35,7 +39,7 @@ def unregister():
 class SubscriptionInfoSchema(Schema):
     public_key = fields.String(data_key='publicKey')
 
-@pushes.get('/key')
+@pushes_view.get('/key')
 @jwt_required()
 def get_subscription_key():
     return SubscriptionInfoSchema().dump(dict(public_key=app.config.get('VAPID_PUBLIC_KEY')))

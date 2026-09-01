@@ -20,16 +20,16 @@ def create_api(app: flask.Flask) -> flask.Flask:
     def on_validation_error(e):
         return flask.jsonify({'code': 'ValidationError', 'messages':e.messages}), 400
 
-    app.register_blueprint(auth, url_prefix='/api/auth')
-    app.register_blueprint(users, url_prefix='/api/user')
-    app.register_blueprint(pushes, url_prefix='/api/user/push')
-    app.register_blueprint(stats, url_prefix='/api/user/stat')
+    app.register_blueprint(auth_view, url_prefix='/api/auth')
+    app.register_blueprint(users_view, url_prefix='/api/user')
+    app.register_blueprint(pushes_view, url_prefix='/api/user/push')
+    app.register_blueprint(stats_view, url_prefix='/api/user/stat')
 
-    app.register_blueprint(spellings, url_prefix='/api/spellings')
-    app.register_blueprint(accents, url_prefix='/api/accents')
-    app.register_blueprint(invites, url_prefix='/api/invites')
-    app.register_blueprint(tags, url_prefix='/api/tags')
-    app.register_blueprint(rules, url_prefix='/api/rules')
-    app.register_blueprint(words, url_prefix='/api/words')
+    app.register_blueprint(spellings_view, url_prefix='/api/spellings')
+    app.register_blueprint(accents_view, url_prefix='/api/accents')
+    app.register_blueprint(invites_view, url_prefix='/api/invites')
+    app.register_blueprint(tags_view, url_prefix='/api/tags')
+    app.register_blueprint(rules_view, url_prefix='/api/rules')
+    app.register_blueprint(words_view, url_prefix='/api/words')
 
     return app

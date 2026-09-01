@@ -5,7 +5,7 @@ from ..models.word import Rule
 from ..services.words import WordService
 from flask_jwt_extended import jwt_required, current_user
 
-rules = Blueprint('rules', __name__)
+rules_view = Blueprint('rules', __name__)
 
 
 class RuleSchema(Schema):
@@ -20,7 +20,7 @@ class RulePageSchema(Schema):
     pages = fields.Integer()
     items = fields.Nested(RuleSchema, exclude=['description'], many=True)
 
-@rules.route('<int:rule_id>', methods=['GET'])
+@rules_view.route('<int:rule_id>', methods=['GET'])
 @jwt_required()
 def get_rule(rule_id: int):
     rule = WordService.get_rule_by_id(rule_id)
@@ -29,7 +29,7 @@ def get_rule(rule_id: int):
     return RuleSchema().dump(rule)
 
 
-@rules.route('', methods=['GET'])
+@rules_view.route('', methods=['GET'])
 @jwt_required()
 def get_rules():
     page = max(request.args.get('page', type=int, default=1), 1)

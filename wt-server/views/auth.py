@@ -4,7 +4,7 @@ from flask_jwt_extended import create_access_token, create_refresh_token, set_ac
 from marshmallow import Schema, fields
 
 
-auth = Blueprint('auth', __name__)
+auth_view = Blueprint('auth', __name__)
 
 def user_identity_lookup(user):
     return str(user.id)
@@ -16,11 +16,12 @@ class UserLoginSchema(Schema):
     email = fields.String(required=True)
     password = fields.String(required=True)
 
-@auth.route('/token', methods=['POST'])
+@auth_view.route('/token', methods=['POST'])
 def token():
-    data = UserLoginSchema().load(request.get_json())
+    data = UserLoginSchema(many=False).load(request.get_json())
+    assert data is not None and isinstance(data, dict)
 
-    auth_user = UserService.get_user_by_email(email=data.get('email'))
+    auth_user = UserService.get_user_by_email(email=data.get('email', ''))
     if auth_user is not None and auth_user.check_password(data.get('password')):
         access_token = create_access_token(identity=auth_user)
         #refresh_token = create_refresh_token(identity='default')

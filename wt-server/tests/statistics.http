@@ -11,7 +11,7 @@ Authorization: Bearer {{ auth.accessToken }}
 
 ###
 # @ref auth
-GET http://localhost:5000/api/user/stat/tags
+GET http://localhost:5000/api/user/stat/topics
 Authorization: Bearer {{ auth.accessToken }}
 
 ###

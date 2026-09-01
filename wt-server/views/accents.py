@@ -8,7 +8,7 @@ from flask_jwt_extended import jwt_required, current_user
 from sqlalchemy import or_
 
 
-accents = Blueprint('accents', __name__)
+accents_view = Blueprint('accents', __name__)
 
 
 class AccentPositionSchema(Schema):
@@ -26,7 +26,7 @@ class WordAccentAccentSchema(Schema):
     accents = fields.Pluck(AccentPositionSchema, 'position', many=True)
 
 
-@accents.route('/task', methods=['GET'])
+@accents_view.route('/task', methods=['GET'])
 @jwt_required()
 def prepare_task():
     level = request.args.get('level', 10, type=int)
@@ -57,4 +57,4 @@ def prepare_task():
         count=count - len(failed)
     )
 
-    return WordAccentAccentSchema().dump(failed+new, many=True)
+    return WordAccentAccentSchema().dump(list(failed) + list(new), many=True)

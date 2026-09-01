@@ -1,14 +1,14 @@
 from ..models import db
 from ..models.user import User
 from ..models.word import Word, WordStatistics
-from sqlalchemy import and_
+from sqlalchemy import and_, Sequence
 from sqlalchemy.orm import joinedload
-
+from typing import Sequence
 
 class SpellingService:
 
     @classmethod
-    def find_by_word(cls, word: str, context :str|None = None) -> list[Word]:
+    def find_by_word(cls, word: str, context :str|None = None) -> Sequence[Word]:
         query = db.select(
             Word
         ).options(
@@ -22,7 +22,7 @@ class SpellingService:
         return db.session.execute(query).scalars().all()
 
     @classmethod
-    def get_with_user_stats(cls, user: User, filters: list, order_by: list, count: int) -> list[Word]:
+    def get_with_user_stats(cls, user: User, filters: list, order_by: list, count: int) -> Sequence[Word]:
         query = db.select(Word).options(
             joinedload(Word.spellings)
         ).outerjoin(

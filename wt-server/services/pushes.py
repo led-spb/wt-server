@@ -15,7 +15,7 @@ class WebPushService:
                 endpoint=subscription_info.get('endpoint'),
                 push_info=json.dumps(subscription_info)
             )
-        subscription.create_at = datetime.now()
+        subscription.created_at = datetime.now()
         db.session.add(subscription)
         db.session.commit()
 

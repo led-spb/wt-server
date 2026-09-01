@@ -12,7 +12,7 @@ from marshmallow import Schema, fields, ValidationError, validate, missing
 from flask_jwt_extended import jwt_required, current_user
 
 
-users = Blueprint('users', __name__)
+users_view = Blueprint('users', __name__)
 
 def name_validation(value):
     if str(value).strip() == '':
@@ -38,28 +38,28 @@ class RegisterUserSchema(Schema):
     password = fields.String(required=True)
 
 
-@users.get('')
+@users_view.get('')
 @jwt_required()
 def get_user_info():
     return UserSchema().dump(current_user)
 
-@users.put('')
+@users_view.put('')
 @jwt_required()
 def update_user_info():
     data = UpdateUserSchema().load(request.get_json())
-    if data.get('name') is not None and data.get('name') != current_user:
+    if data.get('name') is not None and data.get('name') != current_user:  # type: ignore
         if current_user.updated_at is not None \
             and datetime.now() - current_user.updated_at < timedelta(days=7):
             raise ValidationError("Forbbiden to change name", field_name='name')
-        current_user.name = data.get('name').strip()
+        current_user.name = data.get('name').strip() # type: ignore
         current_user.updated_at = datetime.now()
-    if data.get('daily_goal') is not None:
-        current_user.daily_goal = data.get('daily_goal')
+    if data.get('daily_goal') is not None: # type: ignore
+        current_user.daily_goal = data.get('daily_goal') # type: ignore
     
     db.session.commit()
     return UserSchema().dump(current_user)
 
-@users.post('/avatar')
+@users_view.post('/avatar')
 @jwt_required()
 def update_user_avatar():
     file = request.files.get('file')
@@ -68,7 +68,7 @@ def update_user_avatar():
     
 
     uniq_filename = str(uuid.uuid4())
-    file.save(os.path.join(app.config.get('UPLOAD_DIR'), uniq_filename))
+    file.save(os.path.join(app.config.get('UPLOAD_DIR'), uniq_filename)) # type: ignore
 
     current_user.avatar_image = uniq_filename
     db.session.commit()
@@ -76,20 +76,21 @@ def update_user_avatar():
     return UserSchema().dump(current_user)
 
 
-@users.post('/register')
+@users_view.post('/register')
 def register_user():
     data = RegisterUserSchema().load(request.get_json())
+    assert data is not None and isinstance(data, dict)
 
-    if not InvitesService.invite_is_valid(data.get('invite')):
+    if not InvitesService.invite_is_valid(data.get('invite', '')):
         raise ValidationError('Invite is invalid', field_name='invite')
 
-    if UserService.get_user_by_email(email=data.get('email')) is not None:
+    if UserService.get_user_by_email(email=data.get('email', '')) is not None:
         raise ValidationError('User is already exists', field_name='email')
     
     UserService.register_user(
-        email=data.get('email'),
-        name=data.get('name'),
-        password=data.get('password'),
+        email=data.get('email', ''), 
+        name=data.get('name', ''),
+        password=data.get('password', ''),
         invite=data.get('invite')
     )
 
@@ -105,7 +106,7 @@ class UserProgressSchema(Schema):
     today = fields.Nested(GoalSchema)
 
 
-@users.get('/progress')
+@users_view.get('/progress')
 @jwt_required()
 def get_user_progress():
     stats = UserStatService.get_user_stats(current_user)
@@ -148,7 +149,7 @@ class UserRatingSchema(Schema):
     progress_pct = fields.Float()
 
 
-@users.get('/rating')
+@users_view.get('/rating')
 @jwt_required()
 def get_rating():
     days = min(request.args.get('days', 7, type=int), 90)
@@ -176,12 +177,11 @@ def get_rating():
 class UserReportSchema(Schema):
     word = fields.Int(required=True)
 
-@users.put('/report')
+@users_view.put('/report')
 @jwt_required()
 def put_user_report():
-    data = UserReportSchema().load(
-        request.get_json()
-    )
+    data = UserReportSchema().load(request.get_json(), many=False)
+    assert data is not None and isinstance(data, dict)
 
     if current_user.reports is None:
         current_user.reports = UserReport(user_id=current_user.id, reports=[])

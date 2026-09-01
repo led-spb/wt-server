@@ -16,6 +16,7 @@ import pywebpush
 import itertools
 from datetime import date, timedelta
 from dataclasses import dataclass
+from typing import Sequence
 
 tools_commands = AppGroup('tools', help='Custom tools')
 
@@ -49,15 +50,16 @@ def exec_merge_words(count :int):
             Word.context == item[1],
         )
 
-        words = db.session.execute(query).unique().scalars().all()
+        words :Sequence[Word] = db.session.execute(query).unique().scalars().all()
 
         new_word = merge_words(words)
+        assert new_word is not None
         update_words_stats(words, new_word)
         cascade_delete_words(words)
     pass
 
 
-def merge_words(words :List[Word]) -> Word:
+def merge_words(words :Sequence[Word]) -> Word|None:
     if len(words) == 0:
         return None
 
@@ -65,7 +67,6 @@ def merge_words(words :List[Word]) -> Word:
         fullword=words[0].fullword,
         context=words[0].context,
         level=min(words, key=lambda x: x.level).level,
-        description=min([w.description for w in words if w.description is not None], key=len, default=None),
         tags=list(set(itertools.chain(*[w.tags for w in words if w.tags is not None]))),
         rules=list(set(itertools.chain(*[w.rules for w in words if w.rules is not None]))),
     )
@@ -104,7 +105,7 @@ def merge_words(words :List[Word]) -> Word:
     return new_word
 
 
-def update_words_stats(words :List[Word], new_word: Word):
+def update_words_stats(words :Sequence[Word], new_word: Word):
     stats = db.session.execute(
         db.select(
             WordStatistics.user_id,
@@ -139,7 +140,7 @@ def update_words_stats(words :List[Word], new_word: Word):
             user_stat.failed += failed
         db.session.add(user_stat)
 
-def cascade_delete_words(words :List[Word]):
+def cascade_delete_words(words :Sequence[Word]):
     for word in words:
         statistics = db.session.execute(
             db.select(WordStatistics).filter(WordStatistics.word_id == word.id)
@@ -156,9 +157,9 @@ def cascade_delete_words(words :List[Word]):
 @click.argument('message', type=str)
 def notify(email: str, message: str):
     user = UserService.get_user_by_email(email)
+    assert user is not None
+
     logging.warning(f'User: {user.name}')
-    if user is None:
-        return
 
     push = next(iter(sorted(user.pushes, reverse=True, key=lambda p: p.created_at)), None)
     logging.warning(f'Push: {push}')

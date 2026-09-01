@@ -3,7 +3,7 @@ from marshmallow import Schema, fields
 from ..services.words import WordService
 from flask_jwt_extended import jwt_required
 
-words = Blueprint('words', __name__)
+words_view = Blueprint('words', __name__)
 
 
 class SpellingSchema(Schema):
@@ -28,7 +28,7 @@ class WordSchema(Schema):
     accents = fields.Pluck(AccentPositionSchema, 'position', many=True)
 
 
-@words.route('<int:word_id>', methods=['GET'])
+@words_view.route('<int:word_id>', methods=['GET'])
 @jwt_required()
 def get_word(word_id: int):
     word = WordService.get_by_id(word_id)
@@ -37,7 +37,7 @@ def get_word(word_id: int):
     return WordSchema().dump(word)
 
 
-@words.route('', methods=['GET'])
+@words_view.route('', methods=['GET'])
 @jwt_required()
 def get_word_by_name():
     name = request.args.get('name', None, type=str)

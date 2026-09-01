@@ -5,7 +5,7 @@ from ..models.word import WordStatistics, Word, Tag
 from datetime import date, timedelta
 from sqlalchemy import func, case, cast, Numeric, desc, and_, nulls_last
 from sqlalchemy.orm import joinedload
-
+from typing import Sequence
 
 class UserStatService:
 
@@ -104,7 +104,7 @@ class UserStatService:
         return None
 
     @classmethod
-    def get_users_with_aggregate_stat(cls, days :int, count :int = 5) -> list[tuple[User, int, int, int, int]]:
+    def get_users_with_aggregate_stat(cls, days :int, count :int = 5) -> Sequence[tuple[User, int, int, int, int]]:
         agg_stat = db.select(
             UserStat.user_id,
             func.sum(UserStat.success).label('success'),
@@ -144,7 +144,7 @@ class UserStatService:
             agg_stat.c.total.desc(),
         ).limit(count)
 
-        return db.session.execute(query).all()
+        return db.session.execute(query).scalars().all()
 
 
     @classmethod
@@ -156,7 +156,7 @@ class UserStatService:
                 WordStatistics.user_id == user.id,
                 WordStatistics.success / (WordStatistics.failed + WordStatistics.success) > 0.75
             )
-        ).one_or_none()
+        ).one()
 
         return user_words
 

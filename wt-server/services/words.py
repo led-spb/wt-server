@@ -2,6 +2,7 @@ from ..models import db
 from ..models.word import Word, Tag, Rule
 from sqlalchemy import func
 from flask_sqlalchemy.pagination import Pagination
+from typing import Sequence
 
 class WordService:
 
@@ -26,12 +27,12 @@ class WordService:
     def get_total_words_count(cls) -> int:
         total_words, = db.session.execute(
             db.select(func.count(Word.id))
-        ).one_or_none()
+        ).one()
 
         return total_words
 
     @classmethod
-    def get_tags_dictonary(cls) -> list[Tag]:
+    def get_tags_dictonary(cls) -> Sequence[Tag]:
         tags = db.session.execute(
             db.select(Tag).order_by(Tag.description)
         ).scalars().all()

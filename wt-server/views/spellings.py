@@ -8,7 +8,7 @@ from flask_jwt_extended import jwt_required, current_user
 from sqlalchemy import or_
 
 
-spellings = Blueprint('spellings', __name__)
+spellings_view = Blueprint('spellings', __name__)
 
 
 class SpellingSchema(Schema):
@@ -29,7 +29,7 @@ class WordSpellingSchema(Schema):
     spellings = fields.Nested(SpellingSchema, many=True, dump_only=True)
 
 
-@spellings.route('task')
+@spellings_view.route('task')
 @jwt_required()
 def prepare_task():
     level = request.args.get('level', 10, type=int)
@@ -48,8 +48,7 @@ def prepare_task():
         filters=default_filters + [ WordStatistics.failed >0, ],
         order_by=[WordStatistics.success/WordStatistics.failed, order_desc(WordStatistics.failed), order_random()],
         count=errors
-    )
-    
+    )    
 
     new = SpellingService.get_with_user_stats(
         user=current_user,
@@ -61,4 +60,7 @@ def prepare_task():
         count=count - len(failed)
     )
 
-    return WordSpellingSchema().dump(failed+new, many=True)
+    return WordSpellingSchema().dump(
+        list(failed)+list(new), 
+        many=True
+    )
