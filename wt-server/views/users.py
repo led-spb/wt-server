@@ -155,7 +155,7 @@ def get_rating():
     days = min(request.args.get('days', 7, type=int), 90)
     count = min(request.args.get('count', 5, type=int), 10)
 
-    stat = UserStatService.get_users_with_aggregate_stat(days=days, count=count)
+    stat = UserStatService.get_users_with_statistics(days=days, count=count)
     total_words = WordService.get_total_words_count()
 
     return UserRatingSchema().dump(

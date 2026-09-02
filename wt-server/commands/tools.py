@@ -189,6 +189,25 @@ def gather_statistics():
         )
     )
 
+    gather_user_statistics()
+    gather_topic_statustics()
+    # todo: gather_rule_statistics
+
+    db.session.commit()
+    pass
+
+def gather_user_statistics():
+    query = db.select(
+        WordStatistics.user_id,
+        func.sum(WordStatistics.success+WordStatistics.failed).label('total'),
+        func.sum(WordStatistics.failed).label('failed'),
+    ).group_by(WordStatistics.user_id)
+
+    db.session.execute(
+        db.insert(UserAggregatedStat).from_select(["user_id", "total", "failed"], query)
+    )
+
+def gather_topic_statustics():
     words_query = db.select(
         Word.id.label('word_id'),
         cast(func.jsonb_array_elements(Word.tags), Numeric).label('tag_id')
@@ -210,5 +229,3 @@ def gather_statistics():
     db.session.execute(
         db.insert(UserAggregatedStat).from_select(["user_id", "tag_id", "total", "failed"], query)
     )
-    db.session.commit()
-    pass

@@ -3,7 +3,7 @@ from ..models.user import User
 from ..models.stats import UserStat, UserAggregatedStat
 from ..models.word import WordStatistics, Word, Tag
 from datetime import date, timedelta
-from sqlalchemy import func, case, cast, Numeric, desc, and_, nulls_last, Row
+from sqlalchemy import func, case, cast, Numeric, desc, and_, nulls_last
 from sqlalchemy.orm import joinedload
 from typing import Sequence, Tuple
 
@@ -104,7 +104,7 @@ class UserStatService:
         return None
 
     @classmethod
-    def get_users_with_aggregate_stat(cls, days :int, count :int = 5) -> Sequence[Tuple[User, int, int, int, int]]:
+    def get_users_with_statistics(cls, days :int, count :int = 5) -> Sequence[Tuple[User, int, int, int, int]]:
         agg_stat = db.select(
             UserStat.user_id,
             func.sum(UserStat.success).label('success'),
@@ -160,49 +160,35 @@ class UserStatService:
 
         return user_words
 
-    @classmethod
-    def get_user_tags_stat(cls, user: User, stat_date: date):
-        query = db.select(
-            UserAggregatedStat
-        ).options(
-            joinedload(UserAggregatedStat.tag)   
-        ).filter(
-            UserAggregatedStat.user_id == user.id
-        ).filter(
-            UserAggregatedStat.recorded_at == stat_date
-        ).filter(
-            UserAggregatedStat.tag.has()
-        ).order_by(
-            desc(UserAggregatedStat.failed/UserAggregatedStat.total)
-        )
-        return db.session.execute(query).unique().scalars()
 
     @classmethod
-    def get_user_topics_stat(cls, user: User):
-        words_query = db.select(
-            Word.id.label('word_id'),
-            cast(func.jsonb_array_elements(Word.tags), Numeric).label('tag_id')
-        ).subquery()
-
-        tags_query = db.select(
-            Tag.id, 
+    def get_user_topics_stat(cls, user: User, for_date = date.today(), aggregate_topics_root: bool = True):
+        stat_query = db.select(
+            UserAggregatedStat.recorded_at, 
+            (UserAggregatedStat.total-UserAggregatedStat.failed).label('success') ,
+            UserAggregatedStat.failed,
+            UserAggregatedStat.tag_id, 
             func.coalesce(Tag.parent_id, Tag.id).label('root_tag_id')
+        ).join(
+            Tag,
+            UserAggregatedStat.tag_id == Tag.id
+        ).filter(
+            UserAggregatedStat.user_id == user.id,
+            UserAggregatedStat.recorded_at.in_((for_date, ))
         ).subquery()
 
-        query =  db.select(
-            Tag.id, Tag.description,
-            func.sum(WordStatistics.success).label('success'),
-            func.sum(WordStatistics.failed).label('failed')
+        query = db.select(
+            Tag, 
+            stat_query.c.recorded_at, 
+            func.sum(stat_query.c.success).label('success'),
+            func.sum(stat_query.c.failed).label('failed'),
         ).join(
-            words_query, WordStatistics.word_id == words_query.c.word_id
-        ).join(
-            tags_query, words_query.c.tag_id == tags_query.c.id
-        ).join(
-            Tag, tags_query.c.root_tag_id == Tag.id
-        ).filter(
-            WordStatistics.user_id == user.id           
+            Tag,
+            stat_query.c.root_tag_id == Tag.id if aggregate_topics_root else stat_query.c.tag_id == Tag.id
         ).group_by(
-            Tag.id, Tag.description
+            Tag, stat_query.c.recorded_at
+        ).order_by(
+            Tag.id, desc(stat_query.c.recorded_at)
         )
 
-        return db.session.execute(query).mappings()
+        return db.session.execute(query)

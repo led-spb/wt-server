@@ -9,10 +9,12 @@ Authorization: Bearer {{ auth.accessToken }}
 GET http://localhost:5000/api/user/stat/words
 Authorization: Bearer {{ auth.accessToken }}
 
+
 ###
 # @ref auth
-GET http://localhost:5000/api/user/stat/topics
+GET http://localhost:5000/api/user/stat/topics?offset_days=0
 Authorization: Bearer {{ auth.accessToken }}
+
 
 ###
 # @ref auth

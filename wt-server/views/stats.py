@@ -1,10 +1,14 @@
 from flask import Blueprint, request, current_app as app
 from ..models import db
+from ..models.word import Tag
 from ..services.stats import UserStatService
+from dataclasses import dataclass
 from datetime import date, timedelta
 from marshmallow import Schema, fields
+from marshmallow import validate 
 from flask_jwt_extended import jwt_required, current_user
-
+from types import SimpleNamespace
+from typing import Any
 
 stats_view = Blueprint('stats', __name__)
 
@@ -76,44 +80,31 @@ def update_user_stat():
     )
     return '', 204
 
-
-class TagSchema(Schema):
+class TopicSchema(Schema):
     id = fields.Int()
     description = fields.String(data_key='title')
     type = fields.String()
 
-
-class TagsStatisticsSchema(Schema):
-    tag = fields.Nested(TagSchema)
-    total = fields.Integer()
-    failed = fields.Integer()
-    prev = fields.Nested("TagsStatisticsSchema", only=['total', 'failed'])
-
-
-@stats_view.get('/tags')
-@jwt_required()
-def get_stats_by_tags():
-    #current_period = date.today() - timedelta(days=date.today().weekday())
-    #last_period = current_period - timedelta(days=7)
-    current_period = date.today()
-    last_period = current_period - timedelta(days=1)
-
-    current = list(UserStatService.get_user_tags_stat(current_user, current_period))
-    prev = {info.tag.id: info for info in UserStatService.get_user_tags_stat(current_user, last_period)}
-
-    for curr in current:
-       curr.prev = prev.get(curr.tag.id)
-  
-    return TagsStatisticsSchema().dump(current, many=True)
-
-
 class TopicsReportSchema(StatisticSchema):
-    id = fields.Int()
-    description = fields.Str()
+    Tag = fields.Nested("TopicSchema", data_key='topic')
 
+class TopicStatisticsRequestSchema(Schema):
+    offset_days = fields.Integer(load_default=0, validate=validate.Range(min=0, max=31))
 
 @stats_view.get('/topics')
 @jwt_required()
 def get_stats_by_topics():
-    data = UserStatService.get_user_topics_stat(current_user)
+    args: Any = TopicStatisticsRequestSchema().load(
+        request.args,
+        many=False,
+        unknown='exclude'
+    )
+    params = SimpleNamespace(**args)
+    period_date = date.today() - timedelta(days=params.offset_days)
+
+    data = UserStatService.get_user_topics_stat(
+        current_user, 
+        for_date = period_date,
+        aggregate_topics_root=True
+    )
     return TopicsReportSchema().dump(data, many=True)
