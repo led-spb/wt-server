@@ -113,7 +113,8 @@ class TopicSchema(Schema):
     type = fields.String()
 
 class TopicsReportSchema(StatisticSchema):
-    Tag = fields.Nested("TopicSchema", data_key='topic')
+    #Topic = fields.Nested("TopicSchema", data_key='topic')
+    Topic = fields.Pluck(TopicSchema(), field_name='description', data_key='description')
 
 @stats_view.get('/topics')
 @jwt_required()
@@ -128,7 +129,7 @@ def get_user_stats_by_topics():
 
     data = UserStatService.get_user_topics_stat(
         current_user, 
-        for_date = period_date,
+        from_date = period_date,
         aggregate_topics_root=True
-    ) or []
+    )
     return TopicsReportSchema().dump(data, many=True)

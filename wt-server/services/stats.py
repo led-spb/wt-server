@@ -1,6 +1,6 @@
 from ..models import db
 from ..models.user import User
-from ..models.word import  Word
+from ..models.word import  Word, Topic
 from ..models.stats import WordStatistics, UserStatistics, UserTopicStatistics
 from datetime import date, timedelta
 from sqlalchemy import func, case, cast, Numeric, desc, nulls_last
@@ -30,60 +30,41 @@ class UserStatService:
         return db.session.execute(query).scalars()
     
     @classmethod
-    def get_user_words_statistics(cls, user: User):
-        query = db.select(
-            WordStatistics
-        ).options(
-            joinedload(WordStatistics.word)
-        ).filter(
-            WordStatistics.user_id == user.id
-        )
-        return db.session.execute(query).scalars()
-
-    @classmethod
     def get_user_stats(cls, user: User, from_date: date = date.today()):
         query = db.select(
             UserStatistics
         ).filter(
             UserStatistics.user_id == user.id,
-            UserStatistics.recorded_at >= from_date,
-            UserStatistics.recorded_at <= date.today()
+            UserStatistics.recorded_at.between(from_date, date.today())
         ).order_by(
             desc(UserStatistics.recorded_at)
         )
         return db.session.execute(query)
 
     @classmethod
-    def get_user_topics_stat(cls, user: User, for_date = date.today(), aggregate_topics_root: bool = True):
-        ...
-        # stat_query = select(
-        #     UserTopicSTatistics.recorded_at, 
-        #     (UserTopicSTatistics.total-UserTopicSTatistics.failed).label('success') ,
-        #     UserTopicSTatistics.failed,
-        #     UserTopicSTatistics.tag_id, 
-        #     func.coalesce(Tag.parent_id, Tag.id).label('root_tag_id')
-        # ).join(
-        #     Tag,
-        #     UserTopicSTatistics.tag_id == Tag.id
-        # ).filter(
-        #     UserTopicSTatistics.user_id == user.id,
-        #     UserTopicSTatistics.recorded_at.in_((for_date, ))
-        # ).subquery()
+    def get_user_topics_stat(cls, user: User, from_date = date.today(), aggregate_topics_root: bool = True):
+        stat_query = db.select(
+            UserTopicStatistics, 
+            func.coalesce(Topic.parent_id, Topic.id).label('root_topic_id')
+        ).join(
+            Topic,
+            UserTopicStatistics.topic_id == Topic.id
+        ).filter(
+            UserTopicStatistics.user_id == user.id,
+            UserTopicStatistics.recorded_at.between(from_date, date.today())
+        ).subquery()
 
-        # query = select(
-        #     Tag, 
-        #     stat_query.c.recorded_at, 
-        #     func.sum(stat_query.c.success).label('success'),
-        #     func.sum(stat_query.c.failed).label('failed'),
-        # ).join(
-        #     Tag,
-        #     stat_query.c.root_tag_id == Tag.id if aggregate_topics_root else stat_query.c.tag_id == Tag.id
-        # ).group_by(
-        #     Tag.id, stat_query.c.recorded_at
-        # ).order_by(
-        #     Tag.id, desc(stat_query.c.recorded_at)
-        # )
-        # return db.session.execute(query)
+        query = db.select(
+            Topic, 
+            func.sum(stat_query.c.success).label('success'),
+            func.sum(stat_query.c.failed).label('failed'),
+        ).join(
+            stat_query,
+            Topic.id == stat_query.c.root_topic_id if aggregate_topics_root else stat_query.c.tag_id
+        ).group_by(
+            Topic
+        )
+        return db.session.execute(query)
 
 
     @classmethod
