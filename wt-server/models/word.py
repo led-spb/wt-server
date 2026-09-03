@@ -38,23 +38,11 @@ class Accent(Base):
     position: Mapped[int] = mapped_column(nullable=False)
 
 
-class WordStatistics(Base):
-    __tablename__ = 'word_statistics'
-
-    word_id: Mapped[int] = mapped_column(ForeignKey("words.id"), primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
-
-    success: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    failed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-
-    word: Mapped[Word] = relationship()
-
-
 class TaskTypeEnum(Enum):
     spelling = 'spelling'
     accent = 'accent'
 
-class Tag(Base):
+class Topic(Base):
     __tablename__ = 'tags'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

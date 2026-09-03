@@ -2,31 +2,38 @@ from . import Base
 import datetime
 from sqlalchemy import Integer, ForeignKey, Date
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from .word import Tag, Rule
+from .word import Topic, Word
+
+class WordStatistics(Base):
+    __tablename__ = 'word_statistics'
+
+    word_id: Mapped[int] = mapped_column(ForeignKey("words.id"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+
+    success: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    failed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    word: Mapped[Word] = relationship()
 
 
-class UserStat(Base):
-    __tablename__ = 'users_stat'
+class UserStatistics(Base):
+    __tablename__ = 'user_statistics'
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    recorded_at: Mapped[datetime.date] = mapped_column(Date(), default=datetime.date.today)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    recorded_at: Mapped[datetime.date] = mapped_column(Date(), default=datetime.date.today, primary_key=True)
 
     success: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     failed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 
-class UserAggregatedStat(Base):
-    __tablename__ = 'aggregate_stat'
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+class UserTopicStatistics(Base):
+    __tablename__ = 'user_topic_statistics'
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    recorded_at: Mapped[datetime.date] = mapped_column(Date(), nullable=False, default=datetime.date.today)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, primary_key=True)
+    recorded_at: Mapped[datetime.date] = mapped_column(Date(), nullable=False, primary_key=True, default=datetime.date.today)
+    topic_id: Mapped[int] = mapped_column(ForeignKey("tags.id"), nullable=False, primary_key=True)
 
-    tag_id: Mapped[int] = mapped_column(ForeignKey("tags.id"), nullable=True)
-    rule_id: Mapped[int] = mapped_column(ForeignKey("rules.id"), nullable=True)
-    total: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    success: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     failed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    tag: Mapped[Tag] = relationship()
-    rule: Mapped[Rule] = relationship()
+    topic: Mapped[Topic] = relationship()

@@ -1,6 +1,7 @@
 from ..models import db
 from ..models.user import User
-from ..models.word import Word, WordStatistics
+from ..models.word import Word
+from ..models.stats import WordStatistics
 from sqlalchemy import and_, Sequence
 from sqlalchemy.orm import joinedload
 from typing import Sequence

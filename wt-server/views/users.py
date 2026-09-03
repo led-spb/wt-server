@@ -109,7 +109,7 @@ class UserProgressSchema(Schema):
 @users_view.get('/progress')
 @jwt_required()
 def get_user_progress():
-    stats = UserStatService.get_user_stats(current_user)
+    stats = UserStatService.get_user_stats(current_user).scalars()
 
     series = 0
     today_progress = 0

@@ -1,6 +1,7 @@
 from flask import Blueprint, request, current_app
 from ..models import db, nulls_first, order_random, order_desc
-from ..models.word import Word, Spelling, WordStatistics
+from ..models.word import Word, Spelling
+from ..models.stats import WordStatistics
 from ..services.spellings import SpellingService
 from ..services.words import WordService
 from marshmallow import Schema, fields

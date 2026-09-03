@@ -4,11 +4,6 @@
 # @ref auth
 GET http://localhost:5000/api/user/stat
 Authorization: Bearer {{ auth.accessToken }}
-###
-# @ref auth
-GET http://localhost:5000/api/user/stat/words
-Authorization: Bearer {{ auth.accessToken }}
-
 
 ###
 # @ref auth
@@ -18,11 +13,18 @@ Authorization: Bearer {{ auth.accessToken }}
 
 ###
 # @ref auth
+GET http://localhost:5000/api/user/stat/words
+Authorization: Bearer {{ auth.accessToken }}
+
+
+
+###
+# @ref auth
 PUT http://localhost:5000/api/user/stat
 Authorization: Bearer {{ auth.accessToken }}
 Content-Type: application/json
 
 {
-    "success": [],
-    "failed": []
+    "success": [1],
+    "failed": [1]
 }

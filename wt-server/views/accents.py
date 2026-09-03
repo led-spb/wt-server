@@ -1,7 +1,8 @@
 from flask import Blueprint, request, current_app as app
 from marshmallow import Schema, fields
 from ..models import db, order_random, nulls_first, order_desc
-from ..models.word import Word, Accent, WordStatistics
+from ..models.word import Word, Accent
+from ..models.stats import WordStatistics
 from ..services.words import WordService
 from ..services.accents import AccentService
 from flask_jwt_extended import jwt_required, current_user

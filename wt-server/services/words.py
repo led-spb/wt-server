@@ -1,5 +1,5 @@
 from ..models import db
-from ..models.word import Word, Tag, Rule
+from ..models.word import Word, Topic, Rule
 from sqlalchemy import func
 from flask_sqlalchemy.pagination import Pagination
 from typing import Sequence
@@ -32,12 +32,12 @@ class WordService:
         return total_words
 
     @classmethod
-    def get_tags_dictonary(cls) -> Sequence[Tag]:
-        tags = db.session.execute(
-            db.select(Tag).order_by(Tag.description)
+    def get_topics(cls) -> Sequence[Topic]:
+        topics = db.session.execute(
+            db.select(Topic).order_by(Topic.description)
         ).scalars().all()
 
-        return tags
+        return topics
 
     @classmethod
     def get_rule_by_id(cls, rule_id: int) -> Rule | None:

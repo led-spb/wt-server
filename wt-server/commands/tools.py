@@ -8,8 +8,8 @@ from sqlalchemy import func, distinct, cast, Numeric, or_
 from sqlalchemy.orm import join, joinedload
 from ..models import db
 from ..models.user import User
-from ..models.word import Word, Spelling, Accent, WordStatistics, Tag
-from ..models.stats import UserAggregatedStat
+from ..models.word import Word, Spelling, Accent, Topic
+from ..models.stats import UserTopicStatistics, WordStatistics
 from ..services.users import UserService
 from ..services.stats import UserStatService
 import pywebpush
@@ -178,22 +178,22 @@ def notify(email: str, message: str):
 
 @tools_commands.command('gather', help='Gather user statistics')
 def gather_statistics():
-    db.session.execute(
-        db.delete(
-            UserAggregatedStat
-        ).filter(
-            or_(
-                UserAggregatedStat.recorded_at == date.today(),
-                UserAggregatedStat.recorded_at < date.today() - timedelta(days=60)
-            )
-        )
-    )
+    # db.session.execute(
+    #     db.delete(
+    #         UserTopicSTatistics
+    #     ).filter(
+    #         or_(
+    #             UserTopicSTatistics.recorded_at == date.today(),
+    #             UserTopicSTatistics.recorded_at < date.today() - timedelta(days=60)
+    #         )
+    #     )
+    # )
 
-    gather_user_statistics()
-    gather_topic_statustics()
-    # todo: gather_rule_statistics
+    # gather_user_statistics()
+    # gather_topic_statustics()
+    # # todo: gather_rule_statistics
 
-    db.session.commit()
+    # db.session.commit()
     pass
 
 def gather_user_statistics():
@@ -204,7 +204,7 @@ def gather_user_statistics():
     ).group_by(WordStatistics.user_id)
 
     db.session.execute(
-        db.insert(UserAggregatedStat).from_select(["user_id", "total", "failed"], query)
+        db.insert(UserTopicStatistics).from_select(["user_id", "total", "failed"], query)
     )
 
 def gather_topic_statustics():
@@ -215,17 +215,17 @@ def gather_topic_statustics():
 
     query = db.select(
         WordStatistics.user_id,
-        Tag.id.label('tag_id'),
+        Topic.id.label('tag_id'),
         func.sum(WordStatistics.success+WordStatistics.failed).label('total'),
         func.sum(WordStatistics.failed).label('failed')
     ).join(
         words_query, WordStatistics.word_id == words_query.c.word_id
     ).join(
-        Tag, words_query.c.tag_id == Tag.id
+        Topic, words_query.c.tag_id == Topic.id
     ).group_by(
-        WordStatistics.user_id, Tag.id, Tag.description
+        WordStatistics.user_id, Topic.id, Topic.description
     )
 
     db.session.execute(
-        db.insert(UserAggregatedStat).from_select(["user_id", "tag_id", "total", "failed"], query)
+        db.insert(UserTopicStatistics).from_select(["user_id", "tag_id", "total", "failed"], query)
     )

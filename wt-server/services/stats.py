@@ -1,11 +1,13 @@
 from ..models import db
 from ..models.user import User
-from ..models.stats import UserStat, UserAggregatedStat
-from ..models.word import WordStatistics, Word, Tag
+from ..models.word import  Word, Topic
+from ..models.stats import WordStatistics, UserStatistics, UserTopicStatistics
 from datetime import date, timedelta
-from sqlalchemy import func, case, cast, Numeric, desc, and_, nulls_last
+from sqlalchemy import func, case, cast, Numeric, desc, and_, nulls_last, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, List
+import itertools
 
 class UserStatService:
 
@@ -39,84 +41,131 @@ class UserStatService:
         return db.session.execute(query).scalars()
 
     @classmethod
-    def get_user_stats(cls, user: User, days :int|None = None):
-        query = db.select(UserStat
+    def get_user_stats(cls, user: User, from_date: date = date.today()):
+        query = select(
+            UserStatistics
         ).filter(
-            UserStat.user_id == user.id
-        ).filter(
-            days is None or (UserStat.recorded_at >= date.today() - timedelta(days=days))
+            UserStatistics.user_id == user.id,
+            UserStatistics.recorded_at >= from_date,
+            UserStatistics.recorded_at <= date.today()
         ).order_by(
-            UserStat.recorded_at.desc()
+            desc(UserStatistics.recorded_at)
         )
-        return db.session.execute(query).scalars()
+        return db.session.execute(query)
+
+    @classmethod
+    def get_user_topics_stat(cls, user: User, for_date = date.today(), aggregate_topics_root: bool = True):
+        ...
+        # stat_query = select(
+        #     UserTopicSTatistics.recorded_at, 
+        #     (UserTopicSTatistics.total-UserTopicSTatistics.failed).label('success') ,
+        #     UserTopicSTatistics.failed,
+        #     UserTopicSTatistics.tag_id, 
+        #     func.coalesce(Tag.parent_id, Tag.id).label('root_tag_id')
+        # ).join(
+        #     Tag,
+        #     UserTopicSTatistics.tag_id == Tag.id
+        # ).filter(
+        #     UserTopicSTatistics.user_id == user.id,
+        #     UserTopicSTatistics.recorded_at.in_((for_date, ))
+        # ).subquery()
+
+        # query = select(
+        #     Tag, 
+        #     stat_query.c.recorded_at, 
+        #     func.sum(stat_query.c.success).label('success'),
+        #     func.sum(stat_query.c.failed).label('failed'),
+        # ).join(
+        #     Tag,
+        #     stat_query.c.root_tag_id == Tag.id if aggregate_topics_root else stat_query.c.tag_id == Tag.id
+        # ).group_by(
+        #     Tag.id, stat_query.c.recorded_at
+        # ).order_by(
+        #     Tag.id, desc(stat_query.c.recorded_at)
+        # )
+        # return db.session.execute(query)
 
 
     @classmethod
-    def update_user_stat(cls, user: User, success_words: list[int]|None, failed_words: list[int]|None) -> None:
-        success = success_words or []
-        failed = failed_words or []
+    def update_user_stat(cls, user: User, success_words: List[int], failed_words: List[int] ) -> None:
+        # search word ids
+        words_ids = db.session.execute(
+            select(Word.id).filter(Word.id.in_(set(failed_words) | set(success_words)))
+        ).scalars().all()
 
-        word_stats = db.session.execute(
-            db.select(
-                Word, WordStatistics
-            ).outerjoin(
-                WordStatistics,
-                and_(
-                    Word.id == WordStatistics.word_id,
-                    WordStatistics.user_id == user.id
-                )
-            ).filter(
-                Word.id.in_(success + failed)
+        # filter input word lists
+        success = [x for x in success_words if x in words_ids]
+        failed = [x for x in failed_words if x in words_ids]
+
+        words = {word_id: {'success':0, 'failed': 0} for word_id in words_ids}
+        for word_id in success:
+            words[word_id]['success'] += 1
+        for word_id in failed:
+            words[word_id]['failed'] += 1
+
+        if len(success) == 0 and len(failed) == 0:
+            return
+
+        # update user day statistic
+        insert_user_stm = insert(
+            UserStatistics
+        ).values(
+            user_id=user.id,
+            recorded_at=date.today(),
+            success=len(success),
+            failed=len(failed),
+        )
+        update_user_stm = insert_user_stm.on_conflict_do_update(
+            index_elements=[UserStatistics.user_id, UserStatistics.recorded_at],
+            set_=dict(
+                success=UserStatistics.success+insert_user_stm.excluded.success,
+                failed=UserStatistics.failed+insert_user_stm.excluded.failed,
             )
         )
-        total_success = 0
-        total_failed = 0
+        db.session.execute(update_user_stm)
 
-        for word, stat in word_stats:
-            if stat is None:
-                stat = WordStatistics(word_id=word.id, user_id=user.id, success=0, failed=0)
-            if word.id in success:
-                stat.success += 1
-                total_success += 1
-            if word.id in failed:
-                stat.failed += 1
-                total_failed += 1
-            db.session.add(stat)
-
-        user_stat = db.session.execute(
-            db.select(
-                UserStat
-            ).filter(
-                UserStat.user_id == user.id
-            ).filter(
-                UserStat.recorded_at == date.today()
+        # update total user word statistic
+        insert_word_stm = insert(
+            WordStatistics
+        )
+        update_word_stm = insert_word_stm.on_conflict_do_update(
+            index_elements=[WordStatistics.word_id, WordStatistics.user_id],
+            set_=dict(
+                success=WordStatistics.success + insert_word_stm.excluded.success,
+                failed=WordStatistics.failed + insert_word_stm.excluded.failed,
             )
-        ).scalar_one_or_none()
+        )
+        data = [
+            {
+                'word_id': word_id, 
+                'user_id': user.id, 
+                'success': stat['success'],
+                'failed': stat['failed']
+            } for word_id, stat in words.items()
+        ]
+        db.session.execute(update_word_stm, data)
 
-        if user_stat is None:
-           user_stat = UserStat(user_id=user.id, success=total_success, failed=total_failed)
-        else:
-           user_stat.success += total_success
-           user_stat.failed += total_failed
 
-        db.session.add(user_stat)
+        # update user topic statistics
+
+
         db.session.commit()
         return None
 
     @classmethod
     def get_users_with_statistics(cls, days :int, count :int = 5) -> Sequence[Tuple[User, int, int, int, int]]:
         agg_stat = db.select(
-            UserStat.user_id,
-            func.sum(UserStat.success).label('success'),
-            func.sum(UserStat.failed).label('failed'), 
+            UserStatistics.user_id,
+            func.sum(UserStatistics.success).label('success'),
+            func.sum(UserStatistics.failed).label('failed'), 
             case(
-                (func.sum(UserStat.success + UserStat.failed) >= 100, func.sum(UserStat.success + UserStat.failed)),
+                (func.sum(UserStatistics.success + UserStatistics.failed) >= 100, func.sum(UserStatistics.success + UserStatistics.failed)),
                 else_=0
             ).label('total'),
         ).filter(
-            UserStat.recorded_at >= date.today() - timedelta(days=days)
+            UserStatistics.recorded_at >= date.today() - timedelta(days=days)
         ).group_by(
-            UserStat.user_id
+            UserStatistics.user_id
         ).subquery()
 
         progress_stat = db.select(
@@ -159,36 +208,3 @@ class UserStatService:
         ).one()
 
         return user_words
-
-
-    @classmethod
-    def get_user_topics_stat(cls, user: User, for_date = date.today(), aggregate_topics_root: bool = True):
-        stat_query = db.select(
-            UserAggregatedStat.recorded_at, 
-            (UserAggregatedStat.total-UserAggregatedStat.failed).label('success') ,
-            UserAggregatedStat.failed,
-            UserAggregatedStat.tag_id, 
-            func.coalesce(Tag.parent_id, Tag.id).label('root_tag_id')
-        ).join(
-            Tag,
-            UserAggregatedStat.tag_id == Tag.id
-        ).filter(
-            UserAggregatedStat.user_id == user.id,
-            UserAggregatedStat.recorded_at.in_((for_date, ))
-        ).subquery()
-
-        query = db.select(
-            Tag, 
-            stat_query.c.recorded_at, 
-            func.sum(stat_query.c.success).label('success'),
-            func.sum(stat_query.c.failed).label('failed'),
-        ).join(
-            Tag,
-            stat_query.c.root_tag_id == Tag.id if aggregate_topics_root else stat_query.c.tag_id == Tag.id
-        ).group_by(
-            Tag, stat_query.c.recorded_at
-        ).order_by(
-            Tag.id, desc(stat_query.c.recorded_at)
-        )
-
-        return db.session.execute(query)
