@@ -1,9 +1,9 @@
 from ..models import db
 from ..models.user import User
-from ..models.word import  Word, Topic
+from ..models.word import  Word
 from ..models.stats import WordStatistics, UserStatistics, UserTopicStatistics
 from datetime import date, timedelta
-from sqlalchemy import func, case, cast, Numeric, desc, and_, nulls_last, select
+from sqlalchemy import func, case, cast, Numeric, desc, nulls_last
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload
 from typing import Sequence, Tuple, List
@@ -42,7 +42,7 @@ class UserStatService:
 
     @classmethod
     def get_user_stats(cls, user: User, from_date: date = date.today()):
-        query = select(
+        query = db.select(
             UserStatistics
         ).filter(
             UserStatistics.user_id == user.id,
@@ -89,23 +89,27 @@ class UserStatService:
     @classmethod
     def update_user_stat(cls, user: User, success_words: List[int], failed_words: List[int] ) -> None:
         # search word ids
-        words_ids = db.session.execute(
-            select(Word.id).filter(Word.id.in_(set(failed_words) | set(success_words)))
+        words = db.session.execute(
+            db.select(Word).filter(Word.id.in_(set(failed_words) | set(success_words)))
         ).scalars().all()
 
+        exists_word_ids = [w.id for w in words]
         # filter input word lists
-        success = [x for x in success_words if x in words_ids]
-        failed = [x for x in failed_words if x in words_ids]
-
-        words = {word_id: {'success':0, 'failed': 0} for word_id in words_ids}
-        for word_id in success:
-            words[word_id]['success'] += 1
-        for word_id in failed:
-            words[word_id]['failed'] += 1
+        success = [id_ for id_ in success_words if id_ in exists_word_ids]
+        failed = [id_ for id_ in failed_words if id_ in exists_word_ids]
 
         if len(success) == 0 and len(failed) == 0:
             return
 
+        cls._update_user_statistics(user, words, success, failed)
+        cls._update_word_statistics(user, words, success, failed)
+        cls._update_topic_statistics(user, words, success, failed)
+
+        db.session.commit()
+        return None
+
+    @classmethod
+    def _update_user_statistics(cls, user: User, words: Sequence[Word], success: List[int], failed: List[int]):
         # update user day statistic
         insert_user_stm = insert(
             UserStatistics
@@ -123,33 +127,69 @@ class UserStatService:
             )
         )
         db.session.execute(update_user_stm)
+        return None
 
-        # update total user word statistic
-        insert_word_stm = insert(
-            WordStatistics
-        )
-        update_word_stm = insert_word_stm.on_conflict_do_update(
+    @classmethod
+    def _update_word_statistics(cls, user: User, words: Sequence[Word], success: List[int], failed: List[int]):
+        word_stat = { word_id: {'success':0, 'failed': 0} for word_id in set(success + failed) }
+        for word_id in success:
+            word_stat[word_id]['success'] += 1
+        for word_id in failed:
+            word_stat[word_id]['failed'] += 1
+
+        insert_stm = insert(WordStatistics)
+        update_stm = insert_stm.on_conflict_do_update(
             index_elements=[WordStatistics.word_id, WordStatistics.user_id],
             set_=dict(
-                success=WordStatistics.success + insert_word_stm.excluded.success,
-                failed=WordStatistics.failed + insert_word_stm.excluded.failed,
+                success=WordStatistics.success + insert_stm.excluded.success,
+                failed=WordStatistics.failed + insert_stm.excluded.failed,
             )
         )
         data = [
             {
                 'word_id': word_id, 
                 'user_id': user.id, 
-                'success': stat['success'],
-                'failed': stat['failed']
-            } for word_id, stat in words.items()
+                'success': info['success'],
+                'failed': info['failed']
+            } for word_id, info in word_stat.items()
         ]
-        db.session.execute(update_word_stm, data)
+        db.session.execute(update_stm, data)
+        return None
 
+    @classmethod
+    def _update_topic_statistics(cls, user: User, words: Sequence[Word], success: List[int], failed: List[int]):
+        word_topics = {word.id: word.tags for word in words }
+        topics = {
+            topic: {'success': 0, 'failed': 0}
+            for topic in itertools.chain.from_iterable(word_topics.values())
+        }
+        for word_id in success:
+            for topic_id in word_topics[word_id]:
+                topics[topic_id]['success'] += 1
+        for word_id in failed:
+            for topic_id in word_topics[word_id]:
+                topics[topic_id]['failed'] += 1
 
-        # update user topic statistics
+        print(topics)
 
-
-        db.session.commit()
+        insert_stm = insert(UserTopicStatistics)
+        update_stm = insert_stm.on_conflict_do_update(
+            index_elements=[UserTopicStatistics.user_id, UserTopicStatistics.recorded_at, UserTopicStatistics.topic_id],
+            set_=dict(
+                success=UserTopicStatistics.success + insert_stm.excluded.success,
+                failed=UserTopicStatistics.failed + insert_stm.excluded.failed,
+            )
+        )
+        data = [
+            {
+                'user_id': user.id,
+                'recorded_at': date.today(),
+                'topic_id': topic_id, 
+                'success': info['success'],
+                'failed': info['failed']
+            } for topic_id, info in topics.items()
+        ]
+        db.session.execute(update_stm, data)
         return None
 
     @classmethod

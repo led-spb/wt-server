@@ -25,6 +25,6 @@ Authorization: Bearer {{ auth.accessToken }}
 Content-Type: application/json
 
 {
-    "success": [1],
-    "failed": [1]
+    "success": [],
+    "failed": []
 }
