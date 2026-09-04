@@ -112,7 +112,7 @@ class TopicSchema(Schema):
     description = fields.String(data_key='title')
     type = fields.String()
 
-class TopicsReportSchema(StatisticSchema):
+class TopicsReportSchema(DayStatSchema):
     #Topic = fields.Nested("TopicSchema", data_key='topic')
     Topic = fields.Pluck(TopicSchema(), field_name='description', data_key='description')
 

@@ -3,6 +3,7 @@ from ..models.user import User
 from ..models.word import  Word, Topic
 from ..models.stats import WordStatistics, UserStatistics, UserTopicStatistics
 from datetime import date, timedelta
+import sqlalchemy as sa
 from sqlalchemy import func, case, cast, Numeric, desc, nulls_last
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import joinedload
@@ -13,7 +14,7 @@ class UserStatService:
 
     @classmethod
     def get_user_word_failed(cls, user: User, count :int):
-        query = db.select(
+        query = sa.select(
             WordStatistics
         ).options(
             joinedload(WordStatistics.word)
@@ -31,7 +32,7 @@ class UserStatService:
     
     @classmethod
     def get_user_stats(cls, user: User, from_date: date = date.today()):
-        query = db.select(
+        query = sa.select(
             UserStatistics
         ).filter(
             UserStatistics.user_id == user.id,
@@ -43,7 +44,7 @@ class UserStatService:
 
     @classmethod
     def get_user_topics_stat(cls, user: User, from_date = date.today(), aggregate_topics_root: bool = True):
-        stat_query = db.select(
+        stat_query = sa.select(
             UserTopicStatistics, 
             func.coalesce(Topic.parent_id, Topic.id).label('root_topic_id')
         ).join(
@@ -54,7 +55,8 @@ class UserStatService:
             UserTopicStatistics.recorded_at.between(from_date, date.today())
         ).subquery()
 
-        query = db.select(
+        query = sa.select(
+            stat_query.c.recorded_at,
             Topic, 
             func.sum(stat_query.c.success).label('success'),
             func.sum(stat_query.c.failed).label('failed'),
@@ -62,7 +64,8 @@ class UserStatService:
             stat_query,
             Topic.id == stat_query.c.root_topic_id if aggregate_topics_root else stat_query.c.tag_id
         ).group_by(
-            Topic
+            stat_query.c.recorded_at,
+            Topic.id
         )
         return db.session.execute(query)
 
@@ -71,7 +74,7 @@ class UserStatService:
     def update_user_stat(cls, user: User, success_words: List[int], failed_words: List[int] ) -> None:
         # search word ids
         words = db.session.execute(
-            db.select(Word).filter(Word.id.in_(set(failed_words) | set(success_words)))
+            sa.select(Word).filter(Word.id.in_(set(failed_words) | set(success_words)))
         ).scalars().all()
 
         exists_word_ids = [w.id for w in words]
@@ -175,7 +178,7 @@ class UserStatService:
 
     @classmethod
     def get_users_with_statistics(cls, days :int, count :int = 5) -> Sequence[Tuple[User, int, int, int, int]]:
-        agg_stat = db.select(
+        agg_stat = sa.select(
             UserStatistics.user_id,
             func.sum(UserStatistics.success).label('success'),
             func.sum(UserStatistics.failed).label('failed'), 
@@ -189,7 +192,7 @@ class UserStatService:
             UserStatistics.user_id
         ).subquery()
 
-        progress_stat = db.select(
+        progress_stat = sa.select(
             WordStatistics.user_id,
             func.count().label('progress'),
         ).filter(
@@ -198,7 +201,7 @@ class UserStatService:
             WordStatistics.user_id
         ).subquery()
 
-        query = db.select(
+        query = sa.select(
             User,
             func.coalesce(agg_stat.c.success, 0),
             func.coalesce(agg_stat.c.failed,0),
@@ -220,7 +223,7 @@ class UserStatService:
     @classmethod
     def get_user_progress(cls, user: User) -> int:
         user_words, = db.session.execute(
-            db.select(
+            sa.select(
                 func.count(WordStatistics.word_id)
             ).filter(
                 WordStatistics.user_id == user.id,
