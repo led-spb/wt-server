@@ -10,11 +10,23 @@ def create_api(app: flask.Flask) -> flask.Flask:
     @jwt.user_identity_loader
     def identity_loader(user):
         return user_identity_lookup(user)
-    
+
     @jwt.user_lookup_loader
     def user_lookup_callback(_jwt_header, jwt_data):
         identity = jwt_data["sub"]
         return user_lookup(identity)
+
+    @jwt.unauthorized_loader
+    def missing_token_callback(error_string):
+        return flask.jsonify({"error": "Request does not contain an access token.", "code": "authorization_required"}), 401
+
+    @jwt.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_payload):
+        return flask.jsonify({"error": "The token has expired.", "code": "token_expired"}), 401
+
+    @jwt.invalid_token_loader
+    def invalid_token_callback(jwt_payload):
+        return flask.jsonify({"error": "The token is invalid.", "code": "invalid_token"}), 401
 
     @app.errorhandler(ValidationError)
     def on_validation_error(e):
