@@ -42,6 +42,7 @@ def create_api(app: flask.Flask) -> flask.Flask:
     app.register_blueprint(invites_view, url_prefix='/api/invites')
     app.register_blueprint(rules_view, url_prefix='/api/rules')
     app.register_blueprint(words_view, url_prefix='/api/words')
+    app.register_blueprint(tasks_view, url_prefix='/api/tasks')
 
     # deprecated api, need to use /api/topics
     app.register_blueprint(topics_view, url_prefix='/api/tags')

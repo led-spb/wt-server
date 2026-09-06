@@ -1,0 +1,7 @@
+# @import ./auth.http
+
+###
+# @ref auth
+GET http://localhost:5000/api/tasks?count=50
+Authorization: Bearer {{ auth.accessToken }}
+

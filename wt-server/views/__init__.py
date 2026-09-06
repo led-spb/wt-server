@@ -8,3 +8,4 @@ from .rules import rules_view
 from .words import words_view
 from .pushes import pushes_view
 from .stats import stats_view
+from .tasks import tasks_view

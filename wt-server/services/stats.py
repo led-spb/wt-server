@@ -1,6 +1,6 @@
 from ..models import db
 from ..models.user import User
-from ..models.word import  Word, Topic
+from ..models.word import  Word, Topic, Spelling
 from ..models.stats import WordStatistics, UserStatistics, UserTopicStatistics
 from datetime import date, timedelta
 import sqlalchemy as sa
@@ -29,7 +29,23 @@ class UserStatService:
         ).limit(count)
 
         return db.session.execute(query).scalars()
-    
+
+    @classmethod
+    def get_user_words(cls, user: User, count : int, filters: list, order_by: list):
+        query = sa.select(
+            Word, WordStatistics
+        ).options(
+            joinedload(Word.spellings),
+            joinedload(Word.accents),
+        ).outerjoin(
+            WordStatistics, sa.and_(Word.id == WordStatistics.word_id, WordStatistics.user_id == user.id)
+        ).filter(
+            *filters
+        ).order_by(
+            *order_by
+        ).limit(count)
+        return db.session.execute(query).unique()
+            
     @classmethod
     def get_user_stats(cls, user: User, from_date: date = date.today()):
         query = sa.select(
@@ -102,12 +118,14 @@ class UserStatService:
             recorded_at=date.today(),
             success=len(success),
             failed=len(failed),
+            failed_words=failed,
         )
         update_user_stm = insert_user_stm.on_conflict_do_update(
             index_elements=[UserStatistics.user_id, UserStatistics.recorded_at],
             set_=dict(
                 success=UserStatistics.success+insert_user_stm.excluded.success,
                 failed=UserStatistics.failed+insert_user_stm.excluded.failed,
+                failed_words=UserStatistics.failed_words.concat(insert_user_stm.excluded.failed_words),
             )
         )
         db.session.execute(update_user_stm)

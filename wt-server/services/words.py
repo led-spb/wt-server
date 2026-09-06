@@ -28,7 +28,6 @@ class WordService:
         total_words, = db.session.execute(
             db.select(func.count(Word.id))
         ).one()
-
         return total_words
 
     @classmethod

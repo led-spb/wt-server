@@ -1,7 +1,9 @@
 from . import Base
 import datetime
+from typing import List
 from sqlalchemy import Integer, ForeignKey, Date
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import JSONB
 from .word import Topic, Word
 
 class WordStatistics(Base):
@@ -24,7 +26,7 @@ class UserStatistics(Base):
 
     success: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     failed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-
+    failed_words: Mapped[List['int']] = mapped_column(JSONB, nullable=True)
 
 class UserTopicStatistics(Base):
     __tablename__ = 'user_topic_statistics'
